@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 from tenacity import RetryError, stop_after_delay
@@ -39,5 +40,39 @@ def test_get_dbt_job_run_manifest_json_to_file(monkeypatch, tmp_path):
         artifact_name="manifest.json",
         run_id=run_id,
         output_dir=tmp_path,
+    )
+    assert file_name.exists()
+
+
+def test_get_dbt_job_run_manifest_json_to_file_already_exists(monkeypatch, tmp_path):
+    """Test that a manifest can be downloaded to a file."""
+    monkeypatch.setattr(call_dbt_cloud_api.retry, "stop", stop_after_delay(0))
+    run_id = os.getenv("DBT_RUN_ID")
+
+    file_name = tmp_path / "manifest.json"
+    Path(file_name).touch()
+    assert file_name.exists()
+    with pytest.raises(FileExistsError):
+        get_dbt_job_run_artifact(
+            account_id=os.getenv("DBT_ACCOUNT_ID"),
+            artifact_name="manifest.json",
+            run_id=run_id,
+            output_dir=tmp_path,
+        )
+
+
+def test_get_dbt_job_run_manifest_json_to_file_with_step(monkeypatch, tmp_path):
+    """Test that a manifest can be downloaded to a file."""
+    monkeypatch.setattr(call_dbt_cloud_api.retry, "stop", stop_after_delay(0))
+    run_id = os.getenv("DBT_RUN_ID")
+
+    file_name = tmp_path / "manifest.json"
+    assert not file_name.exists()
+    get_dbt_job_run_artifact(
+        account_id=os.getenv("DBT_ACCOUNT_ID"),
+        artifact_name="manifest.json",
+        run_id=run_id,
+        output_dir=tmp_path,
+        step=4,
     )
     assert file_name.exists()
