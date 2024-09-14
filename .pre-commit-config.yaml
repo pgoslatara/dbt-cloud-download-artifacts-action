@@ -1,0 +1,49 @@
+---
+exclude: '^dist'
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.6.0
+      hooks:
+          - id: trailing-whitespace
+          - id: check-json
+          - id: check-ast
+          - id: check-merge-conflict
+          - id: check-toml
+          - id: check-yaml
+            args: [--unsafe]
+          - id: debug-statements
+          - id: detect-private-key
+          - id: end-of-file-fixer
+    - repo: local
+      hooks:
+        - id: ruff
+          name: ruff
+          entry: uv run ruff check --force-exclude --config pyproject.toml --fix
+          language: python
+          types_or: [python, pyi, jupyter]
+          require_serial: true
+    - repo: local
+      hooks:
+        - id: ruff-format
+          name: ruff-format
+          entry: uv run ruff format --force-exclude --config pyproject.toml
+          language: python
+          types_or: [python, pyi, jupyter]
+          require_serial: true
+    - repo: local
+      hooks:
+          - id: mypy
+            args: ["--install-types", "--explicit-package-bases", "--ignore-missing-imports", "--scripts-are-modules", "--non-interactive"]
+            entry: uv run mypy
+            language: system
+            name: mypy
+            require_serial: true
+            types_or: [python, pyi]
+    - repo: local
+      hooks:
+        - id: sqlfmt
+          entry: uv run sqlfmt
+          language: system
+          name: sqlfmt
+          require_serial: true
+          types_or: [sql, jinja]
