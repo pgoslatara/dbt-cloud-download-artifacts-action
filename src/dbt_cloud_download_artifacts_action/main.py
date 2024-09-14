@@ -1,6 +1,8 @@
 import argparse
 import logging
+from argparse import Namespace
 from pathlib import Path
+from typing import Optional
 
 from dbt_cloud_download_artifacts_action.dbt_cloud_helpers import (
     get_dbt_job_run_artifact,
@@ -13,16 +15,9 @@ from dbt_cloud_download_artifacts_action.logger import configure_console_logging
 from dbt_cloud_download_artifacts_action.version import version
 
 
-def cli() -> None:
+def cli(args: Optional[Namespace] = None) -> None:
     """CLI entrypoint."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--commit-sha", type=str, required=True)
-    parser.add_argument("--output-dir", default="./tmp", type=str, required=False)
-    parser.add_argument("--repo-name", type=str, required=True)
-    parser.add_argument("--step", default=None, type=int, required=False)
-    parser.add_argument("--verbose", action="store_true")
-    args = parser.parse_args()
-
+    args = arg_parser()
     configure_console_logging(verbose=args.verbose)
     logging.info(f"Running `dbt-cloud-download-artifacts-action` ({version()})...")
     logging.debug(f"{args=}")
@@ -37,3 +32,22 @@ def cli() -> None:
         output_dir=Path(args.output_dir),
         run_id=dbt_run_id,
     )
+
+
+def arg_parser() -> Namespace:
+    """Parse command line arguments.
+
+    Returns:
+        Namespace: Parsed arguments.
+
+    """
+    parser = argparse.ArgumentParser(
+        description="Download dbt artifacts from dbt Cloud."
+    )
+    parser.add_argument("--commit-sha", type=str, required=True)
+    parser.add_argument("--output-dir", default="./tmp", type=str, required=False)
+    parser.add_argument("--repo-name", type=str, required=True)
+    parser.add_argument("--step", default=None, type=int, required=False)
+    parser.add_argument("--verbose", action="store_true")
+
+    return parser.parse_args()

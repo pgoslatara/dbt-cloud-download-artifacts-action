@@ -26,6 +26,7 @@ dev = [
     "pytest<9",
     "pytest-xdist<4",
     "ruff<1",
+    "semver<4",
     "sqlfmt<1",
     "types-pycurl",
     "types-requests",

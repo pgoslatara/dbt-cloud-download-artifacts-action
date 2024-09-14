@@ -73,7 +73,7 @@ def get_dbt_job_run_artifact(
     artifact_name: str,
     output_dir: Path,
     run_id: int,
-    step_no: Union[int, None] = None,
+    step: Union[int, None] = None,
 ) -> None:
     """Get an artifact for a given dbt Cloud run. If specified, save as a file.
 
@@ -82,38 +82,32 @@ def get_dbt_job_run_artifact(
         artifact_name (str): The name of the artifact to download.
         run_id (int): The ID of the dbt Cloud run.
         output_dir (Path): The full path to the directory where files will be saved.
-        step_no (int, optional): The step number of the dbt Cloud job. Defaults to None.
+        step (int, optional): The step number of the dbt Cloud job. Defaults to None.
 
     Raises:
-        RuntimeError: If the file already exists.
+        FileExistsError: If the file already exists.
 
 
     """
     logging.info(f"Downloading {artifact_name} for run id {run_id}...")
 
-    # Check if file already exists, don't want to overwrite it
-    if step_no is None:
-        file_name = artifact_name
-    else:
-        file_name = f'{artifact_name.split(".")[0]}_step_{step_no}.{artifact_name.split(".")[-1]}'
-
-    artifact_file_path = output_dir / file_name
+    artifact_file_path = output_dir / artifact_name
     if artifact_file_path.exists():
-        raise RuntimeError(
+        raise FileExistsError(
             f"File {artifact_file_path} already exists, cancelling download."
         )
 
     endpoint = f"runs/{run_id}/artifacts/{artifact_name}"
-    if step_no is not None:
-        endpoint += f"?step={step_no}"
+    if step is not None:
+        endpoint += f"?step={step}"
 
     response = call_dbt_cloud_api(account_id=account_id, endpoint=endpoint)
 
-    Path.mkdir(Path(output_dir / artifact_name).parent, exist_ok=True, parents=True)
+    Path.mkdir(Path(artifact_file_path).parent, exist_ok=True, parents=True)
     logging.info(
         f"Saving {artifact_name} for run id {run_id} to {artifact_file_path}..."
     )
-    with Path.open(output_dir / file_name, "w") as outfile:
+    with Path.open(artifact_file_path, "w") as outfile:
         json.dump(response, outfile)
 
 

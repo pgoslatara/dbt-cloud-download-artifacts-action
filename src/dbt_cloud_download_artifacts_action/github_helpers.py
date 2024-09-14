@@ -93,11 +93,11 @@ def get_latest_dbt_run_id_per_pull_request(
         check_info = call_github_api(
             endpoint=f"repos/{repo_name}/commits/{commit_sha}/status"
         )
-        logging.info(f"{check_info=}")
+        logging.debug(f"{check_info=}")
         latest_check = [
             check for check in check_info["statuses"] if check["context"] == "dbt Cloud"
         ]
-        logging.info(f"{latest_check=}")
+        logging.debug(f"{latest_check=}")
         if latest_check != []:
             break
         logging.info("No dbt Cloud CI job found, waiting 5s...")
