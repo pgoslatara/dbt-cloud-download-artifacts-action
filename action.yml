@@ -1,0 +1,23 @@
+name: 'dbt-cloud-download-artifacts-action'
+description: 'Download artifacts from a dbt Cloud CI job.'
+inputs:
+  commit-sha:
+    description: 'SHA of the commit that triggered the dbt Cloud CI job.'
+    required: true
+  output-dir:
+    default: '.'
+    description: 'Directory where the artifacts will be saved.'
+    required: false
+  step:
+    default: null
+    description: 'The index of the Step in the Run to query for artifacts.'
+    required: false
+  verbose:
+    default: 'false'
+    description: Run dbt-cloud-download-artifacts-action in verbose mode.
+    required: false
+
+runs:
+  using: composite
+
+  steps:
