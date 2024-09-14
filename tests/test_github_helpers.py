@@ -13,11 +13,11 @@ from dbt_cloud_download_artifacts_action.logger import logging
 def test_get_latest_dbt_run_id_per_pull_request(monkeypatch):
     """Test that the latest dbt run id can be retrieved for a given pull request."""
     monkeypatch.setattr(call_github_api.retry, "stop", stop_after_delay(0))
-    run_id = get_latest_dbt_run_id_per_pull_request(
+    r = get_latest_dbt_run_id_per_pull_request(
         commit_sha=os.getenv("COMMIT_SHA"),
-        repo_name=os.getenv("REPO_FULL_NAME"),
+        repo_name=os.getenv("REPO_NAME"),
     )
-    assert run_id == (int(os.getenv("DBT_ACCOUNT_ID")), int(os.getenv("DBT_RUN_ID")))  # type: ignore[arg-type]
+    assert r == (int(os.getenv("DBT_ACCOUNT_ID")), int(os.getenv("DBT_RUN_ID")))  # type: ignore[arg-type]
 
 
 def test_github_api_connection(monkeypatch):
