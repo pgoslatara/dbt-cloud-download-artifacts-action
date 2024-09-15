@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from dbt_cloud_download_artifacts_action.dbt_cloud_helpers import (
-    get_dbt_job_run_artifact,
+    get_dbt_job_run_artifacts,
     wait_for_dbt_cloud_job_status,
 )
 from dbt_cloud_download_artifacts_action.github_helpers import (
@@ -26,9 +26,8 @@ def cli(args: Optional[Namespace] = None) -> None:
         commit_sha=args.commit_sha, repo_name=args.repo_name
     )
     wait_for_dbt_cloud_job_status(account_id=dbt_account_id, run_id=dbt_run_id)
-    get_dbt_job_run_artifact(
+    get_dbt_job_run_artifacts(
         account_id=dbt_account_id,
-        artifact_name="manifest.json",
         output_dir=Path(args.output_dir),
         run_id=dbt_run_id,
     )
