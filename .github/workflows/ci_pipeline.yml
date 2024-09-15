@@ -11,6 +11,13 @@ jobs:
         permissions:
             id-token: write
         steps:
+          - run: |
+              env
+              ${{ github.sha }}
+              ${{ github.event.pull_request.head.sha }}
+              ${{ github.event.pull_request.base.sha }}
+              ${{ github.head_ref.sha }}
+
           - name: Download dbt artifacts
             uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
             with:
