@@ -56,6 +56,8 @@ jobs:
             issues: write
             pull-requests: write
         steps:
+          - uses: actions/checkout@v4
+
           - name: Download artifacts (minimal options)
             uses: ./
             with:
