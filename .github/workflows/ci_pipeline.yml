@@ -12,7 +12,7 @@ jobs:
             id-token: write
         steps:
           - name: Download dbt artifacts
-            uses: pgoslatara/dbt-cloud-download-artifacts-action@0
+            uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
             with:
               commit-sha: ${{ github.sha }}
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
