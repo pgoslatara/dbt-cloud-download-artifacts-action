@@ -61,7 +61,7 @@ jobs:
           - name: Download artifacts (maximal options)
             uses: ./
             with:
-              commit-sha: ${{ github.sha }}
+              commit-sha: ${{ github.event.pull_request.head.sha }}
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
               output-dir: dbt_artifacts
               step: 4
@@ -70,7 +70,7 @@ jobs:
           - name: Download artifacts (minimal options)
             uses: ./
             with:
-              commit-sha: ${{ github.sha }}
+              commit-sha: ${{ github.event.pull_request.head.sha }}
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
 
     unit-tests:
