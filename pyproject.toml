@@ -12,7 +12,7 @@ license ={"text"= "MIT License"}
 name = "dbt-cloud-download-artifacts-action"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
-version = "0.2.0"
+version = "0.2.1"
 
 [project.scripts]
 download_artifacts = "dbt_cloud_download_artifacts_action.main:cli"
