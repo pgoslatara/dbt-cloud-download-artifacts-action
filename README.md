@@ -1,6 +1,35 @@
+
+<div align="center">
+  <a>
+	<img src="https://img.shields.io/github/release/pgoslatara/dbt-cloud-download-artifacts-action.svg?logo=github">
+  </a>
+  <a>
+	<img src="https://github.com/pgoslatara/dbt-cloud-download-artifacts-action/actions/workflows/ci_pipeline.yml/badge.svg">
+  </a>
+  <a>
+	<img src="https://img.shields.io/badge/License-MIT-yellow.svg">
+  </a>
+  <a>
+	<img src="https://img.shields.io/github/last-commit/pgoslatara/dbt-cloud-download-artifacts-action/main">
+  </a>
+  <a>
+	<img src="https://img.shields.io/github/commits-since/pgoslatara/dbt-cloud-download-artifacts-action/latest">
+  </a>
+</div>
+
+<div align="center">
+  <a>
+	<img src="https://img.shields.io/badge/style-ruff-41B5BE?style=flat">
+  </a>
+  <a>
+	<img src="https://www.aschey.tech/tokei/github/pgoslatara/dbt-cloud-download-artifacts-action?category=code">
+  </a>
+</div>
+<br/>
+
 # dbt-cloud-download-artifacts-action
 
-A GitHub Action to download artifacts from a dbt Cloud CI job triggered by a pull request.
+A GitHub Action to download JSON artifacts from a dbt Cloud CI job triggered by a pull request.
 
 # How to use
 
