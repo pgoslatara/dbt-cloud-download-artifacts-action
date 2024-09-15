@@ -9,10 +9,10 @@ jobs:
     download-artifacts:
         runs-on: ubuntu-latest
         permissions:
-            id-token: read
+            id-token: write
         steps:
           - name: Download dbt artifacts
-            uses: pgoslatara/dbt-cloud-download-artifacts-action@X
+            uses: pgoslatara/dbt-cloud-download-artifacts-action@0
             with:
               commit-sha: ${{ github.sha }}
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
