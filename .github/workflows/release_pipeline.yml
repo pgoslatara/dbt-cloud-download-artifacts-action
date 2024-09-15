@@ -1,0 +1,78 @@
+---
+  name: Release pipeline
+
+  on:
+      workflow_dispatch:
+          inputs:
+              version_bump_type:
+                  description: The version bump type to perform.
+                  required: true
+                  type: choice
+                  options:
+                      - major
+                      - minor
+                      - patch
+                      - premajor
+                      - preminor
+                      - prepatch
+                      - prerelease
+
+  jobs:
+      release:
+          environment:
+              name: publish
+              url: https://pypi.org/p/dbt-cloud-download-artifacts-action
+          runs-on: ubuntu-latest
+          permissions:
+              contents: write
+              id-token: write
+              packages: write
+          steps:
+              - uses: actions/checkout@v4
+
+              - name: Install uv
+                uses: astral-sh/setup-uv@v2
+
+              - name: Set up Python
+                run: uv python install
+
+              - name: Install package
+                run: uv venv && source .venv/bin/activate && make install
+
+              - name: Build whl file
+                run: uv build
+
+              - name: Save version to env var
+                id: version
+                run: |
+                  echo "version=$(download_artifacts --version)" >> $GITHUB_OUTPUT
+
+              - name: Determine if prerelease flag is necessary
+                run: |
+                    [ "${{ inputs.version_bump_type }}" = "premajor" ] || [ "${{ inputs.version_bump_type }}" = "preminor" ] || [ "${{ inputs.version_bump_type }}" = "prepatch" ] || [ "${{ inputs.version_bump_type }}" = "prerelease" ] && export PRERELEASE="--prerelease" || export PRERELEASE="--latest"
+                    echo "PRERELEASE: $PRERELEASE"
+                    echo PRERELEASE=$PRERELEASE >> "$GITHUB_ENV"
+
+              - name: Publish package distributions to PyPI
+                uses: pypa/gh-action-pypi-publish@release/v1
+                with:
+                  packages-dir: dist/
+
+              - name: Create release
+                env:
+                    GH_TOKEN: ${{ secrets.PAT_GITHUB }}
+                run: |
+                    # export LAST_RELEASE=$(gh release list --repo ${{ github.repository }} --order desc --json name --limit 1 | jq -r '.[0].name')
+                    # echo $LAST_RELEASE
+                    gh release create ${{ steps.version.outputs.version }} \
+                        --generate-notes \
+                        --repo ${{ github.repository }} \ # --notes-start-tag $LAST_RELEASE \
+                        --target main \
+                        --title '${{ steps.version.outputs.version }}' \
+                        $PRERELEASE \
+                        --verify-tag
+
+              - name: Upload .whl to release
+                env:
+                    GH_TOKEN: ${{ github.token }}
+                run: gh release upload ${{ steps.version.outputs.version }} ./dist/*.whl
