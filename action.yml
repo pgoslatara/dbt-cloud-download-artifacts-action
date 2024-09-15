@@ -8,6 +8,10 @@ inputs:
     default: '.'
     description: 'Directory where the artifacts will be saved.'
     required: false
+  repo-name:
+    default: '${{ github.repository }}'
+    description: 'Name of the repository.'
+    required: false
   step:
     default: ""
     description: 'The index of the Step in the Run to query for artifacts.'
@@ -54,4 +58,5 @@ runs:
         uvx \
           --from dbt-cloud-download-artifacts-action download_artifacts \
           --commit-sha ${{ inputs.commit-sha }} \
-          --output-dir ${{ inputs.output-dir }} ${{ steps.assemble-verbose-param.outputs.verbose-param }} ${{ steps.assemble-verbose-param.outputs.verbose-param }}
+          --output-dir ${{ inputs.output-dir }} \
+          --repo-name ${{inputs.repo-name }} ${{ steps.assemble-verbose-param.outputs.verbose-param }} ${{ steps.assemble-verbose-param.outputs.verbose-param }}
