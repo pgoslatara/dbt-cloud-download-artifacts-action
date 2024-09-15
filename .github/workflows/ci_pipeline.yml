@@ -1,108 +1,23 @@
----
 name: CI pipeline
 
 on:
-  pull_request_target:
+  pull_request:
       branches:
           - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
-env:
-  COMMIT_SHA: 347316746c4c387c1c77bc8a800f524242e619a1
-  DBT_ACCOUNT_ID: 12893
-  DBT_CLOUD_API_TOKEN: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-  DBT_PROFILES_DIR: dbt_project
-  DBT_PROJECT_DIR: dbt_project
-  DBT_RUN_ID: 324231603
-  PAT_GITHUB: ${{ secrets.PAT_GITHUB }}
-  REPO_NAME: "pgoslatara/dbt-cloud-download-artifacts-action"
-
 jobs:
-    pre-commit:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                fetch-depth: "0"
-
-            - name: checkout-merge
-              uses: check-spelling/checkout-merge@v0.0.5
-
-            - name: Install uv
-              uses: astral-sh/setup-uv@v2
-
-            - name: Set up Python
-              run: uv python install
-
-            - name: Install dependencies
-              run: uv venv && source .venv/bin/activate && make install
-
-            - name: Run pre-commit
-              run: |
-                git diff --name-status origin/main..HEAD > changed_files.txt
-                cat changed_files.txt
-                cat changed_files.txt | xargs uv run pre-commit run --files
-
-    gh-action:
-        needs: [pre-commit]
+    download-artifacts:
         runs-on: ubuntu-latest
         permissions:
-            contents: write
-            id-token: write
-            issues: write
-            pull-requests: write
+            id-token: read
         steps:
-          - uses: actions/checkout@v4
-
-          - name: Download artifacts (maximal options)
-            uses: ./
+          - name: Download dbt artifacts
+            uses: pgoslatara/dbt-cloud-download-artifacts-action@X
             with:
-              commit-sha: ${{ github.event.pull_request.head.sha }}
+              commit-sha: ${{ github.sha }}
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-              output-dir: dbt_artifacts
-              step: 4
-              verbose: true
+              output-dir: target # Optional: Defaults to ".".
+              step: 4 # Optional: Defaults to last step in CI job.
+              verbose: true # Optional: Defaults to false.
 
-          - name: Download artifacts (minimal options)
-            uses: ./
-            with:
-              commit-sha: ${{ github.event.pull_request.head.sha }}
-              dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-
-    unit-tests:
-      needs: [pre-commit]
-      runs-on: ubuntu-latest
-      permissions:
-          contents: write
-          id-token: write
-          issues: write
-          pull-requests: write
-      steps:
-          - uses: actions/checkout@v4
-
-          - name: checkout-merge
-            uses: check-spelling/checkout-merge@v0.0.5
-
-          - name: Install uv
-            uses: astral-sh/setup-uv@v2
-
-          - name: Set up Python
-            run: uv python install
-
-          - name: Install dependencies
-            run: uv venv && source .venv/bin/activate && make install
-
-          - name: Run pytest (unit tests)
-            run: make test | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
-
-          - name: Pytest coverage comment
-            uses: MishaKav/pytest-coverage-comment@main
-            with:
-                pytest-coverage-path: ./pytest-coverage.txt
-                title: Coverage Report
-                badge-title: Coverage
-                junitxml-path: ./coverage.xml
+          - run: ls -ahl target
