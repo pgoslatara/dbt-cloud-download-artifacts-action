@@ -46,21 +46,21 @@
 
                   # Tag and push X.X.X
                   git tag -f \
-                    -a ${{ steps.version.outputs.version }} \
-                    -m "${{ steps.version.outputs.version }}"
-                  git push -f origin "${{ steps.version.outputs.version }}"
+                    -a v${{ steps.version.outputs.version }} \
+                    -m "v${{ steps.version.outputs.version }}"
+                  git push -f origin "v${{ steps.version.outputs.version }}"
 
                   # Tag and push X.X
                   git tag -f \
-                    -a ${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }} \
-                    -m "${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
-                  git push -f origin "${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
+                    -a v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }} \
+                    -m "v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
+                  git push -f origin "v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
 
                   # Tag and push X.X.X
                   git tag -f \
-                    -a ${{ steps.version.outputs.major }} \
-                    -m "${{ steps.version.outputs.major }}"
-                  git push -f origin "${{ steps.version.outputs.major }}"
+                    -a v${{ steps.version.outputs.major }} \
+                    -m "v${{ steps.version.outputs.major }}"
+                  git push -f origin "v${{ steps.version.outputs.major }}"
 
               - name: Publish package distributions to PyPI
                 uses: pypa/gh-action-pypi-publish@release/v1
@@ -73,12 +73,12 @@
                 run: |
                     export LAST_RELEASE=$(gh release list --repo ${{ github.repository }} --order desc --json name --limit 1 | jq -r '.[0].name')
                     echo $LAST_RELEASE
-                    gh release create ${{ steps.version.outputs.version }} \
+                    gh release create v${{ steps.version.outputs.version }} \
                         --generate-notes \
                         --repo ${{ github.repository }} \
                         --notes-start-tag $LAST_RELEASE \
                         --target main \
-                        --title "${{ steps.version.outputs.version }}" \
+                        --title "v${{ steps.version.outputs.version }}" \
                         --latest
 
               - name: Upload .whl to release
