@@ -58,11 +58,6 @@ jobs:
         steps:
           - uses: actions/checkout@v4
 
-          - name: Download artifacts (minimal options)
-            uses: ./
-            with:
-              commit-sha: ${{ github.sha }}
-
           - name: Download artifacts (maximal options)
             uses: ./
             with:
@@ -70,6 +65,11 @@ jobs:
               output-dir: dbt_artifacts
               step: 4
               verbose: true
+
+          - name: Download artifacts (minimal options)
+            uses: ./
+            with:
+              commit-sha: ${{ github.sha }}
 
     unit-tests:
       needs: [pre-commit]
