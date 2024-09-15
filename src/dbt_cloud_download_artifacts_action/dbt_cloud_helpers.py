@@ -121,12 +121,27 @@ def wait_for_dbt_cloud_job_status(
     run_id: int,
 ) -> None:
     """Wait for a dbt Cloud job to complete."""
-    in_progress = True
+
+    def is_dbt_run_in_progress(account_id: int, run_id: int) -> bool:
+        """Check if a dbt Cloud run is in progress.
+
+        Args:
+            account_id (int): The dbt Cloud account ID.
+            run_id (int): The ID of the dbt Cloud run.
+
+        Returns:
+            bool: True if the run is in progress, False otherwise.
+
+        """
+        logging.info(f"Checking if run {run_id} is in progress...")
+        return call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
+            "data"
+        ]["in_progress"]
+
+    in_progress = is_dbt_run_in_progress(account_id, run_id)
     while in_progress:
         logging.info(f"Run {run_id} is in progress...")
-        in_progress = call_dbt_cloud_api(
-            account_id=account_id, endpoint=f"runs/{run_id}/"
-        )["data"]["in_progress"]
+        in_progress = is_dbt_run_in_progress(account_id, run_id)
         time.sleep(10)
 
     run_status = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
