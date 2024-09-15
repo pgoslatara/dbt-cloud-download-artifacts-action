@@ -3,19 +3,6 @@
 
   on:
       workflow_dispatch:
-          inputs:
-              version_bump_type:
-                  description: The version bump type to perform.
-                  required: true
-                  type: choice
-                  options:
-                      - major
-                      - minor
-                      - patch
-                      - premajor
-                      - preminor
-                      - prepatch
-                      - prerelease
 
   jobs:
       release:
@@ -24,9 +11,8 @@
               url: https://pypi.org/p/dbt-cloud-download-artifacts-action
           runs-on: ubuntu-latest
           permissions:
-              contents: write
+              contents: read
               id-token: write
-              packages: write
           steps:
               - uses: actions/checkout@v4
 
@@ -39,16 +25,13 @@
               - name: Install package
                 run: uv venv && source .venv/bin/activate && make install
 
-              - name: Get version and bump
+              - name: Get version
                 id: version
                 run: |
-                  export CURRENT_VERSION=$(uvx --from dbt-cloud-download-artifacts-action download_artifacts --version)
-                  echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
-                  echo "CURRENT_VERSION: $CURRENT_VERSION"
-                  export VERSION=$(uvx --from semver==3.0.2 pysemver bump ${{ inputs.version_bump_type }} $CURRENT_VERSION)
+                  export VERSION=$(uv run download_artifacts --version)
                   echo "VERSION=$VERSION" >> $GITHUB_ENV
                   echo "VERSION: $VERSION"
-                  uvx --from toml-cli==0.7.0 toml set --toml-path=pyproject.toml project.version $VERSION
+                  echo "version=$(echo $VERSION)" >> $GITHUB_OUTPUT
                   echo "major=$(echo $(echo $VERSION | cut -d '.' -f 1))" >> $GITHUB_OUTPUT
                   echo "minor=$(echo $(echo $VERSION | cut -d '.' -f 2))" >> $GITHUB_OUTPUT
                   echo "patch=$(echo $(echo $VERSION | cut -d '.' -f 3))" >> $GITHUB_OUTPUT
@@ -56,26 +39,16 @@
               - name: Build whl file
                 run: uv build
 
-              - name: Determine if prerelease flag is necessary
-                run: |
-                    [ "${{ inputs.version_bump_type }}" = "premajor" ] || [ "${{ inputs.version_bump_type }}" = "preminor" ] || [ "${{ inputs.version_bump_type }}" = "prepatch" ] || [ "${{ inputs.version_bump_type }}" = "prerelease" ] && export PRERELEASE="--prerelease" || export PRERELEASE="--latest"
-                    echo "PRERELEASE: $PRERELEASE"
-                    echo PRERELEASE=$PRERELEASE >> "$GITHUB_ENV"
-
               - name: Tag commit and push
                 run: |
-                  gh auth login --hostname github.com --with-token <<< ${{ secrets.PAT_GITHUB }}
-                  gh auth status
-                  git config --global user.email "pgoslatara@gmail.com"
-                  git config --global user.name "pgoslatara"
-                  git add -A
-                  git commit -m "Bumping version to $VERSION"
+                  git config --global user.email "bot@github.com"
+                  git config --global user.name "github-actions[bot]"
 
                   # Tag and push X.X.X
                   git tag -f \
-                    -a $VERSION \
-                    -m "$VERSION"
-                  git push -f origin "$VERSION"
+                    -a ${{ steps.version.outputs.version }} \
+                    -m "${{ steps.version.outputs.version }}"
+                  git push -f origin "${{ steps.version.outputs.version }}"
 
                   # Tag and push X.X
                   git tag -f \
@@ -89,8 +62,6 @@
                     -m "${{ steps.version.outputs.major }}"
                   git push -f origin "${{ steps.version.outputs.major }}"
 
-                  git push -f origin main
-
               - name: Publish package distributions to PyPI
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
@@ -102,13 +73,13 @@
                 run: |
                     export LAST_RELEASE=$(gh release list --repo ${{ github.repository }} --order desc --json name --limit 1 | jq -r '.[0].name')
                     echo $LAST_RELEASE
-                    gh release create $VERSION \
+                    gh release create ${{ steps.version.outputs.version }} \
                         --generate-notes \
                         --repo ${{ github.repository }} \
                         --notes-start-tag $LAST_RELEASE \
                         --target main \
-                        --title "$VERSION" \
-                        $PRERELEASE
+                        --title "${{ steps.version.outputs.version }}" \
+                        --latest
 
               - name: Upload .whl to release
                 env:
