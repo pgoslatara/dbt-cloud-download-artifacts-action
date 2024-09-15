@@ -64,8 +64,8 @@
 
               - name: Tag commit and push
                 run: |
-                  git config --global user.email "bot@github.com"
-                  git config --global user.name "github-actions[bot]"
+                  gh auth login --hostname github.com --with-token <<< ${{ secrets.PAT_GITHUB }}
+                  gh auth status
                   git add -A
                   git commit -m "Bumping version to $VERSION"
 
@@ -87,7 +87,7 @@
                     -m "${{ steps.version.outputs.major }}"
                   git push -f origin "${{ steps.version.outputs.major }}"
 
-                  git push origin main
+                  git push -f origin main
 
               - name: Publish package distributions to PyPI
                 uses: pypa/gh-action-pypi-publish@release/v1
