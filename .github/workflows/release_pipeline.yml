@@ -39,6 +39,9 @@
               - name: Install package
                 run: uv venv && source .venv/bin/activate && make install
 
+              - name: Update version in pyproject.toml
+                run: uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version 0.1.1
+
               - name: Build whl file
                 run: uv build
 
