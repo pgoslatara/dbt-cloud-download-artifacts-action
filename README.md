@@ -29,7 +29,7 @@
 
 # dbt-cloud-download-artifacts-action
 
-A GitHub Action to download JSON artifacts from a dbt Cloud CI job triggered by a pull request.
+GitHub Action to download JSON artifacts from a dbt Cloud CI job triggered by a pull request.
 
 # How to use
 
@@ -50,7 +50,7 @@ jobs:
           - name: Download dbt artifacts
             uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
             with:
-              commit-sha: ${{ github.sha }}
+              commit-sha: ${{ github.event.pull_request.head.sha }}
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
               output-dir: target # Optional: Defaults to ".".
               step: 4 # Optional: Defaults to last step in CI job.
