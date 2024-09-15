@@ -59,6 +59,31 @@
                     echo "PRERELEASE: $PRERELEASE"
                     echo PRERELEASE=$PRERELEASE >> "$GITHUB_ENV"
 
+              - name: Tag commit and push
+                run: |
+                  git config --global user.email "bot@github.com"
+                  git config --global user.name "github-actions[bot]"
+                  git add -A
+                  git commit -m "Bumping version to $VERSION"
+
+                  # Tag and push X.X.X
+                  git tag -f \
+                    -a $VERSION \
+                    -m "${{ steps.version.outputs.version }}"
+                  git push -f origin "${{ steps.version.outputs.version }}"
+
+                  # Tag and push X.X
+                  git tag -f \
+                    -a ${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }} \
+                    -m "${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
+                  git push -f origin "${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
+
+                  # Tag and push X.X.X
+                  git tag -f \
+                    -a ${{ steps.version.outputs.major }} \
+                    -m "${{ steps.version.outputs.major }}"
+                  git push -f origin "${{ steps.version.outputs.major }}"
+
               - name: Publish package distributions to PyPI
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
