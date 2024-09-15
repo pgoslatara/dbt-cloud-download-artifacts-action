@@ -2,7 +2,7 @@
 name: CI pipeline
 
 on:
-  pull_request:
+  pull_request_target:
       branches:
           - main
 
@@ -61,15 +61,14 @@ jobs:
           - name: Download artifacts (minimal options)
             uses: ./
             with:
-              commit_sha: ${{ env.COMMIT_SHA }}
-              dbt_account_id: ${{ env.DBT_ACCOUNT_ID }}
+              commit-sha: ${{ github.sha }}
 
           - name: Download artifacts (maximal options)
             uses: ./
             with:
-              commit_sha: ${{ env.COMMIT_SHA }}
-              dbt_account_id: ${{ env.DBT_ACCOUNT_ID }}
-              output_dir: dbt_artifacts
+              commit-sha: ${{ github.sha }}
+              output-dir: dbt_artifacts
+              step: 4
               verbose: true
 
     unit-tests:
