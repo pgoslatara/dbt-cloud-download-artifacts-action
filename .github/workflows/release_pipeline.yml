@@ -87,6 +87,8 @@
                     -m "${{ steps.version.outputs.major }}"
                   git push -f origin "${{ steps.version.outputs.major }}"
 
+                  git push origin main
+
               - name: Publish package distributions to PyPI
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
