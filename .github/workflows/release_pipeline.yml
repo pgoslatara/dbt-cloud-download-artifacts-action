@@ -84,4 +84,4 @@
               - name: Upload .whl to release
                 env:
                     GH_TOKEN: ${{ github.token }}
-                run: gh release upload $VERSION ./dist/*.whl
+                run: gh release upload v${{ steps.version.outputs.version }} ./dist/*.whl
