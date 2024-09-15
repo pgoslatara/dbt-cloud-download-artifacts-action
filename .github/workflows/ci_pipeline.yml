@@ -5,8 +5,8 @@ on:
       branches:
           - main
 
-env:
-  PAT_GITHUB: ${{ secrets.PAT_GITHUB }}
+# env:
+#   PAT_GITHUB: ${{ secrets.PAT_GITHUB }}
 
 jobs:
     download-artifacts:

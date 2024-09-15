@@ -65,6 +65,7 @@ runs:
     - name: Download artifacts
       env:
         DBT_CLOUD_API_TOKEN: ${{ inputs.dbt_cloud_api_token }}
+        PAT_GITHUB: ${{ github.token }}
       shell: bash
       run: |
         uv run download_artifacts \
