@@ -68,60 +68,80 @@ def call_dbt_cloud_api(
     return r.json()
 
 
-def get_dbt_job_run_artifact(
+def get_dbt_job_run_artifacts(
     account_id: int,
-    artifact_name: str,
     output_dir: Path,
     run_id: int,
     step: Union[int, None] = None,
 ) -> None:
-    """Get an artifact for a given dbt Cloud run. If specified, save as a file.
+    """Get the artifacts for a given dbt Cloud run and save as a file.
 
     Args:
         account_id (int): The dbt Cloud account ID.
-        artifact_name (str): The name of the artifact to download.
         run_id (int): The ID of the dbt Cloud run.
         output_dir (Path): The full path to the directory where files will be saved.
-        step (int, optional): The step number of the dbt Cloud job. Defaults to None.
+        step (int, optional): The step number of the dbt Cloud job. Defaults to None, will download from the last step.
 
     Raises:
         FileExistsError: If the file already exists.
 
-
     """
-    logging.info(f"Downloading {artifact_name} for run id {run_id}...")
-
-    artifact_file_path = output_dir / artifact_name
-    if artifact_file_path.exists():
-        raise FileExistsError(
-            f"File {artifact_file_path} already exists, cancelling download."
-        )
-
-    endpoint = f"runs/{run_id}/artifacts/{artifact_name}"
-    if step is not None:
-        endpoint += f"?step={step}"
-
-    response = call_dbt_cloud_api(account_id=account_id, endpoint=endpoint)
-
-    Path.mkdir(Path(artifact_file_path).parent, exist_ok=True, parents=True)
-    logging.info(
-        f"Saving {artifact_name} for run id {run_id} to {artifact_file_path}..."
+    logging.info("Determining which artifacts are available...")
+    r = call_dbt_cloud_api(
+        account_id=account_id,
+        endpoint=f"runs/{run_id}/artifacts/",
     )
-    with Path.open(artifact_file_path, "w") as outfile:
-        json.dump(response, outfile)
+    json_artifacts = [x for x in r["data"] if x.endswith(".json")]
+    logging.debug(f"{json_artifacts=}")
+    for artifact_name in json_artifacts:
+        logging.info(f"Downloading {artifact_name} for run id {run_id}...")
+
+        artifact_file_path = output_dir / artifact_name
+        if artifact_file_path.exists():
+            raise FileExistsError(
+                f"File {artifact_file_path} already exists, cancelling download."
+            )
+
+        endpoint = f"runs/{run_id}/artifacts/{artifact_name}"
+        if step is not None:
+            endpoint += f"?step={step}"
+
+        response = call_dbt_cloud_api(account_id=account_id, endpoint=endpoint)
+
+        Path.mkdir(Path(artifact_file_path).parent, exist_ok=True, parents=True)
+        logging.info(
+            f"Saving {artifact_name} for run id {run_id} to {artifact_file_path}..."
+        )
+        with Path.open(artifact_file_path, "w") as outfile:
+            json.dump(response, outfile)
 
 
-def wait_for_dbt_cloud_job_status(
+def wait_for_dbt_cloud_job_run_status(
     account_id: int,
     run_id: int,
 ) -> None:
-    """Wait for a dbt Cloud job to complete."""
-    in_progress = True
+    """Wait for a dbt Cloud job run to complete."""
+
+    def is_dbt_run_in_progress(account_id: int, run_id: int) -> bool:
+        """Check if a dbt Cloud run is in progress.
+
+        Args:
+            account_id (int): The dbt Cloud account ID.
+            run_id (int): The ID of the dbt Cloud run.
+
+        Returns:
+            bool: True if the run is in progress, False otherwise.
+
+        """
+        logging.info(f"Checking if run {run_id} is in progress...")
+        return call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
+            "data"
+        ]["in_progress"]
+
+    in_progress = is_dbt_run_in_progress(account_id, run_id)
     while in_progress:
         logging.info(f"Run {run_id} is in progress...")
-        in_progress = call_dbt_cloud_api(
-            account_id=account_id, endpoint=f"runs/{run_id}/"
-        )["data"]["in_progress"]
+        in_progress = is_dbt_run_in_progress(account_id, run_id)
         time.sleep(10)
 
     run_status = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
