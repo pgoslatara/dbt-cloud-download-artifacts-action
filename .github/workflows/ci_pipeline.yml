@@ -2,7 +2,7 @@
 name: CI pipeline
 
 on:
-  pull_request_target:
+  pull_request:
       branches:
           - main
 
@@ -47,7 +47,7 @@ jobs:
                 cat changed_files.txt
                 cat changed_files.txt | xargs uv run pre-commit run --files
 
-    unit-tests:
+    gh-action:
         needs: [pre-commit]
         runs-on: ubuntu-latest
         permissions:
@@ -56,27 +56,50 @@ jobs:
             issues: write
             pull-requests: write
         steps:
-            - uses: actions/checkout@v4
+          - name: Download artifacts (minimal options)
+            uses: ./
+            with:
+              commit_sha: ${{ env.COMMIT_SHA }}
+              dbt_account_id: ${{ env.DBT_ACCOUNT_ID }}
 
-            - name: checkout-merge
-              uses: check-spelling/checkout-merge@v0.0.5
+          - name: Download artifacts (maximal options)
+            uses: ./
+            with:
+              commit_sha: ${{ env.COMMIT_SHA }}
+              dbt_account_id: ${{ env.DBT_ACCOUNT_ID }}
+              output_dir: dbt_artifacts
+              verbose: true
 
-            - name: Install uv
-              uses: astral-sh/setup-uv@v2
+    unit-tests:
+      needs: [pre-commit]
+      runs-on: ubuntu-latest
+      permissions:
+          contents: write
+          id-token: write
+          issues: write
+          pull-requests: write
+      steps:
+          - uses: actions/checkout@v4
 
-            - name: Set up Python
-              run: uv python install
+          - name: checkout-merge
+            uses: check-spelling/checkout-merge@v0.0.5
 
-            - name: Install dependencies
-              run: uv venv && source .venv/bin/activate && make install
+          - name: Install uv
+            uses: astral-sh/setup-uv@v2
 
-            - name: Run pytest (unit tests)
-              run: make test | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
+          - name: Set up Python
+            run: uv python install
 
-            - name: Pytest coverage comment
-              uses: MishaKav/pytest-coverage-comment@main
-              with:
-                  pytest-coverage-path: ./pytest-coverage.txt
-                  title: Coverage Report
-                  badge-title: Coverage
-                  junitxml-path: ./coverage.xml
+          - name: Install dependencies
+            run: uv venv && source .venv/bin/activate && make install
+
+          - name: Run pytest (unit tests)
+            run: make test | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
+
+          - name: Pytest coverage comment
+            uses: MishaKav/pytest-coverage-comment@main
+            with:
+                pytest-coverage-path: ./pytest-coverage.txt
+                title: Coverage Report
+                badge-title: Coverage
+                junitxml-path: ./coverage.xml

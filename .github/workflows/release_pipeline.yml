@@ -49,6 +49,9 @@
                   echo "VERSION=$VERSION" >> $GITHUB_ENV
                   echo "VERSION: $VERSION"
                   uvx --from toml-cli==0.7.0 toml set --toml-path=pyproject.toml project.version $VERSION
+                  echo "major=$(echo $(echo $VERSION | cut -d '.' -f 1))" >> $GITHUB_OUTPUT
+                  echo "minor=$(echo $(echo $VERSION | cut -d '.' -f 2))" >> $GITHUB_OUTPUT
+                  echo "patch=$(echo $(echo $VERSION | cut -d '.' -f 3))" >> $GITHUB_OUTPUT
 
               - name: Build whl file
                 run: uv build
@@ -69,8 +72,8 @@
                   # Tag and push X.X.X
                   git tag -f \
                     -a $VERSION \
-                    -m "${{ steps.version.outputs.version }}"
-                  git push -f origin "${{ steps.version.outputs.version }}"
+                    -m "$VERSION"
+                  git push -f origin "$VERSION"
 
                   # Tag and push X.X
                   git tag -f \
