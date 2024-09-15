@@ -66,6 +66,8 @@
                 run: |
                   gh auth login --hostname github.com --with-token <<< ${{ secrets.PAT_GITHUB }}
                   gh auth status
+                  git config --global user.email "pgoslatara@gmail.com"
+                  git config --global user.name "pgoslatara"
                   git add -A
                   git commit -m "Bumping version to $VERSION"
 
