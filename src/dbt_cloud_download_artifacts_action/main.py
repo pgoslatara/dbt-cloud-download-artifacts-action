@@ -48,5 +48,6 @@ def arg_parser() -> Namespace:
     parser.add_argument("--repo-name", type=str, required=True)
     parser.add_argument("--step", default=None, type=int, required=False)
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--version", action="version", version=version())
 
     return parser.parse_args()

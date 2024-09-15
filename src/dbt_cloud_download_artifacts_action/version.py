@@ -1,3 +1,6 @@
+from importlib.metadata import version as importlib_version
+
+
 def version() -> str:
     """Get the version of `dbt-cloud-download-artifacts-action`.
 
@@ -5,4 +8,4 @@ def version() -> str:
         str: The version of `dbt-cloud-download-artifacts-action`.
 
     """
-    return "0.1.0"
+    return importlib_version("dbt-cloud-download-artifacts-action")
