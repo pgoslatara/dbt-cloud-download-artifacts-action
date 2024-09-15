@@ -75,7 +75,7 @@
                         --repo ${{ github.repository }} \
                         --notes-start-tag $LAST_RELEASE \
                         --target main \
-                        --title '$VERSION' \
+                        --title "$VERSION" \
                         $PRERELEASE
 
               - name: Upload .whl to release
