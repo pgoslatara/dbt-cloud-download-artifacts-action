@@ -70,15 +70,15 @@
                 run: |
                     export LAST_RELEASE=$(gh release list --repo ${{ github.repository }} --order desc --json name --limit 1 | jq -r '.[0].name')
                     echo $LAST_RELEASE
-                    gh release create ${{ steps.version.outputs.VERSION }} \
+                    gh release create $VERSION \
                         --generate-notes \
                         --repo ${{ github.repository }} \
                         --notes-start-tag $LAST_RELEASE \
                         --target main \
-                        --title '${{ steps.version.outputs.VERSION }}' \
+                        --title '$VERSION' \
                         $PRERELEASE
 
               - name: Upload .whl to release
                 env:
                     GH_TOKEN: ${{ github.token }}
-                run: gh release upload ${{ steps.version.outputs.VERSION }} ./dist/*.whl
+                run: gh release upload $VERSION ./dist/*.whl
