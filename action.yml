@@ -46,7 +46,7 @@ runs:
       id: assemble-verbose-param
       shell: bash
       run: >
-        if [[ "${{ inputs.verbose }}" = "" ]]; then
+        if [[ "${{ inputs.verbose }}" = "false" ]]; then
           echo "verbose-param=" >> $GITHUB_OUTPUT
         else
           echo "verbose-param=--verbose" >> $GITHUB_OUTPUT
@@ -59,4 +59,4 @@ runs:
           --from dbt-cloud-download-artifacts-action download_artifacts \
           --commit-sha ${{ inputs.commit-sha }} \
           --output-dir ${{ inputs.output-dir }} \
-          --repo-name ${{inputs.repo-name }} ${{ steps.assemble-verbose-param.outputs.verbose-param }} ${{ steps.assemble-verbose-param.outputs.verbose-param }}
+          --repo-name ${{ inputs.repo-name }} ${{ steps.assemble-step-param.outputs.step-param }} ${{ steps.assemble-verbose-param.outputs.verbose-param }}
