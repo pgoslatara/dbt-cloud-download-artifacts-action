@@ -62,6 +62,7 @@ jobs:
             uses: ./
             with:
               commit-sha: ${{ github.sha }}
+              dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
               output-dir: dbt_artifacts
               step: 4
               verbose: true
@@ -70,6 +71,7 @@ jobs:
             uses: ./
             with:
               commit-sha: ${{ github.sha }}
+              dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
 
     unit-tests:
       needs: [pre-commit]
