@@ -45,7 +45,7 @@
               - name: Save version to env var
                 id: version
                 run: |
-                  echo "version=$(download_artifacts --version)" >> $GITHUB_OUTPUT
+                  echo "version=$(uv run download_artifacts --version)" >> $GITHUB_OUTPUT
 
               - name: Determine if prerelease flag is necessary
                 run: |
