@@ -72,10 +72,8 @@ def call_github_api(
     exception_message="No dbt Cloud CI job found, has it been triggered correctly?",
     use_signals=True,
 )
-def get_latest_dbt_run_id_per_pull_request(
-    commit_sha: str, repo_name: str
-) -> tuple[int, int]:
-    """Get the run ID of the dbt Cloud CI job that was triggered by the specified commit on the given pull request.
+def get_dbt_run_id_per_commit_sha(commit_sha: str, repo_name: str) -> tuple[int, int]:
+    """Get the run ID of the dbt Cloud CI job that was triggered by the specified commit.
 
     Args:
         commit_sha (str): The commit SHA.
@@ -85,9 +83,7 @@ def get_latest_dbt_run_id_per_pull_request(
         tuple(int, int): The dbt account id and dbt run id associated with the commit_sha.
 
     """
-    # list of checks is ordered, newest first
-    # If a new commit is pushed then the statuses are reset, so we always get the latest statuses from this endpoint
-    # Using a `while` loop to allow for a (short) delay between the PR being created and the dbt Cloud CI job starting.
+    # Using a `while` loop to allow for a (short) delay between the commit being pushed and the dbt Cloud CI job starting.
     latest_check = []
     while True:
         check_info = call_github_api(

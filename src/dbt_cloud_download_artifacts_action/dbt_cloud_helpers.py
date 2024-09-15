@@ -116,11 +116,11 @@ def get_dbt_job_run_artifacts(
             json.dump(response, outfile)
 
 
-def wait_for_dbt_cloud_job_status(
+def wait_for_dbt_cloud_job_run_status(
     account_id: int,
     run_id: int,
 ) -> None:
-    """Wait for a dbt Cloud job to complete."""
+    """Wait for a dbt Cloud job run to complete."""
 
     def is_dbt_run_in_progress(account_id: int, run_id: int) -> bool:
         """Check if a dbt Cloud run is in progress.
