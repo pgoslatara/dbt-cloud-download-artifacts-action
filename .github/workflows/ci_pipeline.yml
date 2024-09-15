@@ -58,6 +58,9 @@ jobs:
         steps:
           - uses: actions/checkout@v4
 
+          - name: checkout-merge
+            uses: check-spelling/checkout-merge@v0.0.5
+
           - name: Download artifacts (minimal options)
             uses: ./
             with:
