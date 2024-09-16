@@ -51,7 +51,7 @@ jobs:
             uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
             with:
               commit-sha: ${{ github.event.pull_request.head.sha }}
-              dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
               output-dir: target # Optional: Defaults to ".".
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
