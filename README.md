@@ -59,3 +59,12 @@ jobs:
           - name: Do something with the artifacts
             ...
 ```
+
+# Contributing
+
+Set up a local development environment, requires [uv](https://github.com/astral-sh/uv):
+```bash
+make install
+```
+
+Create API tokens for both dbt Cloud and GitHub. Copy `.env.example` to `.env` and update the values.
