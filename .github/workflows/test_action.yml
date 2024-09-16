@@ -1,0 +1,22 @@
+---
+    name: Test pipeline
+
+    on:
+      pull_request:
+          branches:
+              - test-main
+
+    jobs:
+        download-artifacts:
+          runs-on: ubuntu-latest
+          permissions:
+              id-token: write
+          steps:
+            - name: Download dbt artifacts
+              uses: pgoslatara/dbt-cloud-download-artifacts-action@main
+              with:
+                  commit-sha: ${{ github.event.pull_request.head.sha }}
+                  dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+                  output-dir: target
+                  step: 4
+                  verbose: true
