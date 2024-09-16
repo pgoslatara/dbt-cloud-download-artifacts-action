@@ -22,7 +22,6 @@ env:
 
 jobs:
     pre-commit:
-        if: github.event.pull_request.base.ref != 'test-action'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -49,7 +48,6 @@ jobs:
                 cat changed_files.txt | xargs uv run pre-commit run --files
 
     gh-action:
-        if: github.event.pull_request.base.ref != 'test-action'
         needs: [pre-commit]
         runs-on: ubuntu-latest
         permissions:
@@ -76,7 +74,6 @@ jobs:
               dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
 
     unit-tests:
-      if: github.event.pull_request.base.ref != 'test-action'
       needs: [pre-commit]
       runs-on: ubuntu-latest
       permissions:
@@ -109,18 +106,3 @@ jobs:
                 title: Coverage Report
                 badge-title: Coverage
                 junitxml-path: ./coverage.xml
-
-    download-artifacts:
-      if: github.event.pull_request.base.ref == 'test-action'
-      runs-on: ubuntu-latest
-      permissions:
-          id-token: write
-      steps:
-        - name: Download dbt artifacts
-          uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
-          with:
-              commit-sha: ${{ github.event.pull_request.head.sha }}
-              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-              output-dir: target
-              step: 4
-              verbose: true
