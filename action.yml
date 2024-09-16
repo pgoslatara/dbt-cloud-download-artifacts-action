@@ -4,7 +4,7 @@ inputs:
   commit-sha:
     description: 'SHA of the commit that triggered the dbt Cloud CI job.'
     required: true
-  dbt_cloud_api_token:
+  dbt-cloud-api-token:
     description: 'dbt Cloud API token.'
     required: true
   output-dir:
@@ -64,7 +64,7 @@ runs:
 
     - name: Download artifacts
       env:
-        DBT_CLOUD_API_TOKEN: ${{ inputs.dbt_cloud_api_token }}
+        DBT_CLOUD_API_TOKEN: ${{ inputs.dbt-cloud-api-token }}
         PAT_GITHUB: ${{ github.token }}
       shell: bash
       run: |

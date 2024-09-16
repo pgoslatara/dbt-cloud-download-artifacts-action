@@ -6,9 +6,6 @@
 
   jobs:
       release:
-          environment:
-              name: publish
-              url: https://pypi.org/p/dbt-cloud-download-artifacts-action
           runs-on: ubuntu-latest
           permissions:
               contents: write
@@ -61,11 +58,6 @@
                     -a v${{ steps.version.outputs.major }} \
                     -m "v${{ steps.version.outputs.major }}"
                   git push -f origin "v${{ steps.version.outputs.major }}"
-
-              - name: Publish package distributions to PyPI
-                uses: pypa/gh-action-pypi-publish@release/v1
-                with:
-                  packages-dir: dist/
 
               - name: Create release
                 env:
