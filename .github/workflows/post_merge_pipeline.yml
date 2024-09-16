@@ -11,6 +11,8 @@ env:
 
 jobs:
     create-and-poll-new-pr:
+        outputs:
+          pr_num: ${{ steps.poll-pr.outputs.PR_NUM }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -18,7 +20,9 @@ jobs:
                     token: ${{ secrets.PAT_GITHUB }}
 
             - name: Dummy changes to force pipeline to detect some predicatable changes
-              run: touch ./test.txt
+              run: |
+                sed -i 's/pull_request_target/pull_request/g' .github/workflows/ci_pipeline.yml
+                touch ./test.txt
 
             - name: Delete remote `test-action` branch
               run: git push origin --delete test-action || true
@@ -30,18 +34,19 @@ jobs:
                     new_branch: test-action
                     push: --force --set-upstream origin test-action
 
-            # To ensure the PR triggers CI workflows it needs to use someone's PAT instead of the default GITHUB_TOKEN
             - name: Create Pull Request
               id: create-ci-pr
               run: |
-                    export PR_URL=$(gh pr create -B main -H test-action --title 'DO NOT MERGE: Auto-generated PR to run checks for PR ${{ github.event.number }}' --body 'Do not merge this PR')
+                    export PR_URL=$(gh pr create -B main -H test-action --title 'DO NOT MERGE: Auto-generated PR to run checks for commit ${{ github.sha }}' --body 'Do not merge this PR')
                     echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
 
             - name: Poll checks of triggered PR
+              id: poll-pr
               run: |
                     sleep 10 # Need to wait for PR to be initialised
                     export PR_NUM=$(echo "${{ steps.create-ci-pr.outputs.PR_URL }}" | cut -d / -f 7)
                     echo $PR_NUM
+                    echo "PR_NUM=$PR_NUM" >> $GITHUB_OUTPUT
                     gh pr checks $PR_NUM --fail-fast --watch
 
     close-new-pr:
@@ -52,4 +57,6 @@ jobs:
             - uses: actions/checkout@v4
 
             - name: Close PR
-              run: gh pr close ${{ github.event.number }}
+              env:
+                PR_NUM: ${{ needs.create-and-poll-new-pr.outputs.pr_num }}
+              run: gh pr close $PR_NUM
