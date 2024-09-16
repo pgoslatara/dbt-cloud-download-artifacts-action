@@ -20,9 +20,7 @@ jobs:
                     token: ${{ secrets.PAT_GITHUB }}
 
             - name: Dummy changes to force pipeline to detect some predicatable changes
-              run: |
-                sed -i 's/pull_request_target/pull_request/g' .github/workflows/ci_pipeline.yml
-                touch ./test.txt
+              run: touch ./test.txt
 
             - name: Delete remote `test-action` branch
               run: git push origin --delete test-action || true
