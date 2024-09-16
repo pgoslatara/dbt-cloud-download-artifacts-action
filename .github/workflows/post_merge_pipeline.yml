@@ -19,12 +19,6 @@ jobs:
               with:
                     token: ${{ secrets.PAT_GITHUB }}
 
-            - name: Create `test-main` branch
-              run: |
-                git push origin --delete test-action || true
-                git checkout -b test-main
-                git push origin test-main
-
             - name: Dummy changes to force pipeline to detect some predicatable changes
               run: |
                 sed -i 's/pull_request_target/pull_request/g' .github/workflows/ci_pipeline.yml
@@ -43,7 +37,7 @@ jobs:
             - name: Create Pull Request
               id: create-ci-pr
               run: |
-                    export PR_URL=$(gh pr create -B test-main -H test-action --title 'DO NOT MERGE: Auto-generated PR to run checks for commit ${{ github.sha }}' --body 'Do not merge this PR')
+                    export PR_URL=$(gh pr create -B main -H test-action --title 'DO NOT MERGE: Auto-generated PR to run checks for commit ${{ github.sha }}' --body 'Do not merge this PR')
                     echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
 
             - name: Poll checks of triggered PR
