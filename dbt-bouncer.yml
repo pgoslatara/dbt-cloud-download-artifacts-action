@@ -1,0 +1,14 @@
+
+manifest_checks:
+  # Exposures
+  - name: check_exposure_based_on_non_public_models
+
+
+  - name: check_model_access
+    include: ^models
+    access: public
+    # severity: warn
+
+
+
+dbt_artifacts_dir: ./target
