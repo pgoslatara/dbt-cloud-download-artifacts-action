@@ -6,7 +6,7 @@ manifest_checks:
 
   - name: check_model_access
     include: ^models
-    access: protected
+    access: public
     severity: warn
 
 
