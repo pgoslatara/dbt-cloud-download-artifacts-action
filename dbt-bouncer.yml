@@ -1,7 +1,14 @@
+
 manifest_checks:
-  - name: check_model_directories
+  # Exposures
+  - name: check_exposure_based_on_non_public_models
+
+
+  - name: check_model_access
     include: ^models
-    permitted_sub_directories:
-      - intermediate
-      - marts
-      - staging
+    access: protected
+    severity: warn
+
+
+
+dbt_artifacts_dir: ./target
