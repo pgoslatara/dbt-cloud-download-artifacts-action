@@ -42,17 +42,15 @@ on:
           - main
 
 jobs:
-    download-artifacts:
+    download-dbt-artifacts:
         runs-on: ubuntu-latest
-        permissions:
-            id-token: write
         steps:
           - name: Download dbt artifacts
-            uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
+            uses: pgoslatara/dbt-cloud-download-artifacts-action@v1
             with:
               commit-sha: ${{ github.event.pull_request.head.sha }}
               dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-              output-dir: target # Optional: Defaults to ".".
+              output-dir: target # Optional: Defaults to "target".
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
 
@@ -68,3 +66,8 @@ make install
 ```
 
 Create API tokens for both dbt Cloud and GitHub. Copy `.env.example` to `.env` and update the values.
+
+All tests can be run with
+```bash
+make test
+```
