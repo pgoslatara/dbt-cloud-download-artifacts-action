@@ -24,4 +24,4 @@ jobs:
           - name: Run dbt-bouncer
             uses: godatadriven/dbt-bouncer@v1
             env:
-              GH_TOKEN: ${{ github.token }} # required for dbt-bouncer
+              GH_TOKEN: ${{ github.token }}
