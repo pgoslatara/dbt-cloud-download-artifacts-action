@@ -43,6 +43,8 @@ on:
 
 jobs:
     download-dbt-artifacts:
+        permissions:
+          pull-requests: write
         runs-on: ubuntu-latest
         steps:
           - name: Download dbt artifacts
