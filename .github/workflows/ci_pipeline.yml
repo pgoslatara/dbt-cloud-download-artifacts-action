@@ -8,8 +8,6 @@ on:
 jobs:
     run-dbt-bouncer:
         permissions:
-          id-token: write
-          issues: write
           pull-requests: write
         runs-on: ubuntu-latest
         steps:
@@ -25,5 +23,11 @@ jobs:
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
 
+          - run: |
+              gh pr comment ${{ github.event.number }} \
+                --repo ${{ github.repository }} \
+                --body "Hello"
+
           - name: Run dbt-bouncer
+            if: always()
             uses: godatadriven/dbt-bouncer@v1
