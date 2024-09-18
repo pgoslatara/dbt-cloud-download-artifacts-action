@@ -45,7 +45,7 @@ jobs:
     download-artifacts:
         runs-on: ubuntu-latest
         permissions:
-            id-token: write
+          pull-requests: write
         steps:
           - name: Download dbt artifacts
             uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
