@@ -9,6 +9,7 @@ jobs:
     run-dbt-bouncer:
         permissions:
           id-token: write
+          issues: write
         runs-on: ubuntu-latest
         steps:
           - name: Checkout
