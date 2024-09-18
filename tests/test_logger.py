@@ -21,7 +21,7 @@ def test_logging_debug(monkeypatch) -> None:
         "dbt_cloud_download_artifacts_action.main.arg_parser",
         lambda: Namespace(
             commit_sha="123456",
-            output_dir="./tmp",
+            output_dir="./target",
             repo_name="test",
             step=None,
             verbose=True,
@@ -50,7 +50,7 @@ def test_logging_info(monkeypatch) -> None:
         "dbt_cloud_download_artifacts_action.main.arg_parser",
         lambda: Namespace(
             commit_sha="123456",
-            output_dir="./tmp",
+            output_dir="./target",
             repo_name="test",
             step=None,
             verbose=False,
