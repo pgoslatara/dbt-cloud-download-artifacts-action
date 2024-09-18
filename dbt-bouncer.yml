@@ -1,0 +1,7 @@
+manifest_checks:
+  - name: check_model_directories
+    include: ^models
+    permitted_sub_directories:
+      - intermediate
+      - marts
+      - staging

@@ -6,17 +6,11 @@ on:
           - main
 
 jobs:
-    download-artifacts:
+    run-dbt-bouncer:
         runs-on: ubuntu-latest
-        permissions:
-            id-token: write
         steps:
-          - run: |
-              env
-              echo "${{ github.sha }}"
-              echo "${{ github.event.pull_request.head.sha }}"
-              echo "${{ github.event.pull_request.base.sha }}"
-              echo "${{ github.head_ref.sha }}"
+          - name: Checkout
+            uses: actions/checkout@v4
 
           - name: Download dbt artifacts
             uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
@@ -27,4 +21,5 @@ jobs:
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
 
-          - run: ls -ahl target
+          - name: Run dbt-bouncer
+            uses: godatadriven/dbt-bouncer@v1
