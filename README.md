@@ -29,7 +29,7 @@
 
 # dbt-cloud-download-artifacts-action
 
-A GitHub Action to download JSON artifacts from a dbt Cloud CI job triggered by a pull request.
+GitHub Action to download JSON artifacts from a dbt Cloud CI job triggered by a pull request.
 
 # How to use
 
@@ -50,8 +50,8 @@ jobs:
           - name: Download dbt artifacts
             uses: pgoslatara/dbt-cloud-download-artifacts-action@v0
             with:
-              commit-sha: ${{ github.sha }}
-              dbt_cloud_api_token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+              commit-sha: ${{ github.event.pull_request.head.sha }}
+              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
               output-dir: target # Optional: Defaults to ".".
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
@@ -59,3 +59,12 @@ jobs:
           - name: Do something with the artifacts
             ...
 ```
+
+# Contributing
+
+Set up a local development environment, requires [uv](https://github.com/astral-sh/uv):
+```bash
+make install
+```
+
+Create API tokens for both dbt Cloud and GitHub. Copy `.env.example` to `.env` and update the values.
