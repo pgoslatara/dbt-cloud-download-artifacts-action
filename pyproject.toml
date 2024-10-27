@@ -21,7 +21,7 @@ download_artifacts = "dbt_cloud_download_artifacts_action.main:cli"
 dev = [
     "ipykernel",
     "mypy<2",
-    "pre-commit<4",
+    "pre-commit<5",
     "pytest-cov<6",
     "pytest<9",
     "pytest-xdist<4",
