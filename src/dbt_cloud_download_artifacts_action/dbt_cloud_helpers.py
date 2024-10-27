@@ -51,7 +51,7 @@ def call_dbt_cloud_api(
         Dict
 
     """  # noqa: D401
-    base_url = f"https://cloud.getdbt.com/api/v2/accounts/{account_id}/"
+    base_url = f"https://{os.getenv('DBT_CLOUD_API_URL_BASE', 'cloud.getdbt.com')}/api/v2/accounts/{account_id}/"
     r = create_requests_session().get(
         auth=DbtCloudAuth(),
         params=params,

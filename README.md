@@ -52,6 +52,7 @@ jobs:
             with:
               commit-sha: ${{ github.event.pull_request.head.sha }}
               dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+              dbt-cloud-api-url-base: cloud.getdbt.com # Optional: Defaults to "cloud.getdbt.com".
               output-dir: target # Optional: Defaults to "target".
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
