@@ -7,6 +7,10 @@ inputs:
   dbt-cloud-api-token:
     description: 'dbt Cloud API token.'
     required: true
+  dbt-cloud-api-url-base:
+    default: 'cloud.getdbt.com'
+    description: 'Base URL of the dbt Cloud API.'
+    required: false
   output-dir:
     default: '.'
     description: 'Directory where the artifacts will be saved.'
@@ -64,6 +68,7 @@ runs:
 
     - name: Download artifacts
       env:
+        DBT_CLOUD_API_URL_BASE: ${{ inputs.dbt-cloud-api-url-base }}
         DBT_CLOUD_API_TOKEN: ${{ inputs.dbt-cloud-api-token }}
         PAT_GITHUB: ${{ github.token }}
       shell: bash
