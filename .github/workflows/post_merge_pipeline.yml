@@ -15,7 +15,7 @@ jobs:
           pr_num: ${{ steps.poll-pr.outputs.PR_NUM }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               with:
                     token: ${{ secrets.PAT_GITHUB }}
 
@@ -52,7 +52,7 @@ jobs:
         needs: [create-and-poll-new-pr]
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
 
             - name: Close PR
               env:
