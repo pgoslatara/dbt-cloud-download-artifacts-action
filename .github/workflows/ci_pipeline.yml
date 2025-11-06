@@ -30,4 +30,10 @@ jobs:
 
           - name: Run dbt-bouncer
             if: always()
-            uses: godatadriven/dbt-bouncer@v1
+            uses: godatadriven/dbt-bouncer@fix-action-params
+
+          - name: Run dbt-bouncer
+            if: always()
+            uses: godatadriven/dbt-bouncer@fix-action-params
+            with:
+                only: manifest_checks

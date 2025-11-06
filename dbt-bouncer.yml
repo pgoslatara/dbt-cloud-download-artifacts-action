@@ -9,6 +9,9 @@ manifest_checks:
     access: public
     # severity: warn
 
-
+catalog_checks:
+   - name: check_column_names
+     description: "Ensure all column names are snake_case."
+     column_name_pattern: ^[a-z0-9_]+$
 
 dbt_artifacts_dir: ./target
