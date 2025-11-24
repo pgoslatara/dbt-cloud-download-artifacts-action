@@ -21,7 +21,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
               with:
                 fetch-depth: "0"
 
@@ -52,7 +52,7 @@ jobs:
             issues: write
             pull-requests: write
         steps:
-          - uses: actions/checkout@v5
+          - uses: actions/checkout@v6
 
           - name: Download artifacts (maximal options)
             uses: ./
@@ -78,7 +78,7 @@ jobs:
           issues: write
           pull-requests: write
       steps:
-          - uses: actions/checkout@v5
+          - uses: actions/checkout@v6
 
           - name: checkout-merge
             uses: check-spelling/checkout-merge@v0.0.6
