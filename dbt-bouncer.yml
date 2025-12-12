@@ -1,0 +1,17 @@
+
+manifest_checks:
+  # Exposures
+  - name: check_exposure_based_on_non_public_models
+
+
+  - name: check_model_access
+    include: ^models
+    access: public
+    # severity: warn
+
+catalog_checks:
+   - name: check_column_names
+     description: "Ensure all column names are snake_case."
+     column_name_pattern: ^[a-z0-9_]+$
+
+dbt_artifacts_dir: ./target
