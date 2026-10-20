@@ -61,6 +61,8 @@ jobs:
             ...
 ```
 
+The action does not check out your repository. If later steps need your repository's files, add `actions/checkout` before this action. A relative `output-dir` resolves against the job's working directory.
+
 # Contributing
 
 Set up a local development environment, requires [uv](https://github.com/astral-sh/uv):
