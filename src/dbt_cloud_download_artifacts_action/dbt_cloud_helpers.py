@@ -84,6 +84,7 @@ def get_dbt_job_run_artifacts(
 
     Raises:
         FileExistsError: If the file already exists.
+        RuntimeError: If the run has no artifacts.
 
     """
     logging.info("Determining which artifacts are available...")
@@ -91,6 +92,10 @@ def get_dbt_job_run_artifacts(
         account_id=account_id,
         endpoint=f"runs/{run_id}/artifacts/",
     )
+    if not r["data"]:
+        raise RuntimeError(
+            f"dbt Cloud run {run_id} has no artifacts, did the run produce any?"
+        )
     json_artifacts = [x for x in r["data"] if x.endswith(".json")]
     logging.debug(f"{json_artifacts=}")
     for artifact_name in json_artifacts:
@@ -119,34 +124,35 @@ def get_dbt_job_run_artifacts(
 def wait_for_dbt_cloud_job_run_status(
     account_id: int,
     run_id: int,
-) -> None:
-    """Wait for a dbt Cloud job run to complete."""
+    poll_interval_seconds: int = 10,
+) -> bool:
+    """Wait for a dbt Cloud job run to complete.
 
-    def is_dbt_run_in_progress(account_id: int, run_id: int) -> bool:
-        """Check if a dbt Cloud run is in progress.
+    `is_complete` is used rather than `in_progress` as a queued or starting run reports
+    `in_progress: false` but has no artifacts yet.
 
-        Args:
-            account_id (int): The dbt Cloud account ID.
-            run_id (int): The ID of the dbt Cloud run.
+    Args:
+        account_id (int): The dbt Cloud account ID.
+        run_id (int): The ID of the dbt Cloud run.
+        poll_interval_seconds (int, optional): Seconds between status checks. Defaults to 10.
 
-        Returns:
-            bool: True if the run is in progress, False otherwise.
+    Returns:
+        bool: True if the run succeeded, False otherwise.
 
-        """
-        logging.info(f"Checking if run {run_id} is in progress...")
-        return call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
+    """
+    while True:
+        logging.info(f"Checking if run {run_id} is complete...")
+        run = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
             "data"
-        ]["in_progress"]
+        ]
+        if run["is_complete"]:
+            break
+        logging.info(
+            f"Run {run_id} is {run.get('status_humanized', 'not complete')}, waiting {poll_interval_seconds}s..."
+        )
+        time.sleep(poll_interval_seconds)
 
-    in_progress = is_dbt_run_in_progress(account_id, run_id)
-    while in_progress:
-        logging.info(f"Run {run_id} is in progress...")
-        in_progress = is_dbt_run_in_progress(account_id, run_id)
-        time.sleep(10)
-
-    run_status = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
-        "data"
-    ]["is_success"]
+    run_status = run["is_success"]
     logging.info(f"Run {run_id} succeeded: {run_status}")
 
     return run_status

@@ -1,29 +1,43 @@
-import os
 from argparse import Namespace
 
-from tenacity import stop_after_delay
-
-from dbt_cloud_download_artifacts_action.dbt_cloud_helpers import (
-    call_dbt_cloud_api,
-)
-from dbt_cloud_download_artifacts_action.github_helpers import (
-    call_github_api,
-)
 from dbt_cloud_download_artifacts_action.main import cli
 
+from .conftest import (
+    COMMIT_SHA,
+    DBT_CLOUD_ARTIFACTS_URL,
+    DBT_CLOUD_RUN_URL,
+    GITHUB_COMMIT_STATUS_URL,
+    REPO_NAME,
+    dbt_cloud_commit_status,
+    dbt_cloud_run,
+)
 
-def test_main_happy_path(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr(call_dbt_cloud_api.retry, "stop", stop_after_delay(0))
-    monkeypatch.setattr(call_github_api.retry, "stop", stop_after_delay(0))
+
+def test_main_happy_path(mocked_responses, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(
+        "dbt_cloud_download_artifacts_action.dbt_cloud_helpers.time.sleep",
+        lambda _: None,
+    )
     monkeypatch.setattr(
         "dbt_cloud_download_artifacts_action.main.arg_parser",
         lambda: Namespace(
-            commit_sha=os.getenv("COMMIT_SHA"),
+            commit_sha=COMMIT_SHA,
             output_dir=tmp_path,
-            repo_name=os.getenv("REPO_NAME"),
+            repo_name=REPO_NAME,
             step=None,
             verbose=False,
         ),
     )
+    mocked_responses.get(
+        GITHUB_COMMIT_STATUS_URL, json={"statuses": [dbt_cloud_commit_status()]}
+    )
+    mocked_responses.get(DBT_CLOUD_RUN_URL, json=dbt_cloud_run(is_complete=False))
+    mocked_responses.get(
+        DBT_CLOUD_RUN_URL, json=dbt_cloud_run(is_complete=True, is_success=True)
+    )
+    mocked_responses.get(DBT_CLOUD_ARTIFACTS_URL, json={"data": ["manifest.json"]})
+    mocked_responses.get(f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json", json={"nodes": {}})
 
     cli()
+
+    assert (tmp_path / "manifest.json").exists()

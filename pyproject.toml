@@ -25,6 +25,7 @@ dev = [
     "pytest-cov<8",
     "pytest<9",
     "pytest-xdist<4",
+    "responses<1",
     "ruff<1",
     "semver<4",
     "sqlfmt<1",
