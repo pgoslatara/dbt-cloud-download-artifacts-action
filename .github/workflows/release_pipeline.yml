@@ -20,7 +20,7 @@
                 run: uv python install
 
               - name: Install package
-                run: uv venv && source .venv/bin/activate && make install
+                run: make install
 
               - name: Get version
                 id: version

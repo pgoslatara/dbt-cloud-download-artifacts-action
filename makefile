@@ -1,5 +1,5 @@
 install:
-	uv pip install -e .[dev]
+	uv sync --locked --extra dev
 
 test:
 	uv run pytest \

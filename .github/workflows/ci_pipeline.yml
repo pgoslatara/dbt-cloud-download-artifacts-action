@@ -31,7 +31,7 @@ jobs:
               run: uv python install
 
             - name: Install dependencies
-              run: uv venv && source .venv/bin/activate && make install
+              run: make install
 
             - name: Run pre-commit
               run: |
@@ -86,7 +86,7 @@ jobs:
             run: uv python install
 
           - name: Install dependencies
-            run: uv venv && source .venv/bin/activate && make install
+            run: make install
 
           - name: Run pytest (unit tests)
             run: make test | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
