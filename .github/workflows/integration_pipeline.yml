@@ -1,0 +1,50 @@
+---
+name: Integration pipeline
+
+# Tests the PR's version of the action against the dbt Cloud CI run for the PR's head
+# commit. This needs DBT_CLOUD_API_TOKEN, so it runs on `pull_request_target`. Fork PRs
+# wait in the `fork-integration` environment until a maintainer approves the run.
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] fork PRs are gated by an approval environment
+      branches:
+          - main
+
+permissions: {}
+
+concurrency:
+    group: integration-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+jobs:
+    gh-action:
+        runs-on: ubuntu-latest
+        environment: ${{ github.event.pull_request.head.repo.full_name != github.repository && 'fork-integration' || '' }}
+        permissions:
+            contents: read
+            statuses: read
+        steps:
+          # Pinned to the head SHA from the event, so commits pushed after approval are not run.
+          - uses: actions/checkout@v5
+            with:
+              persist-credentials: false
+              ref: ${{ github.event.pull_request.head.sha }}
+
+          - name: Download artifacts (maximal options)
+            uses: ./
+            with:
+              commit-sha: ${{ github.event.pull_request.head.sha }}
+              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+              output-dir: dbt_artifacts
+              step: 4
+              verbose: true
+
+          - name: Download artifacts (minimal options)
+            uses: ./
+            with:
+              commit-sha: ${{ github.event.pull_request.head.sha }}
+              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+
+          - name: Check artifacts were downloaded
+            run: |
+              test -s dbt_artifacts/manifest.json
+              test -s manifest.json
