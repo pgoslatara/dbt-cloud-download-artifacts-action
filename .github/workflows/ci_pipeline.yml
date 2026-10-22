@@ -62,7 +62,7 @@ jobs:
           # Fork PRs get a read-only token, so they cannot post the comment.
           - name: Pytest coverage comment
             if: github.event.pull_request.head.repo.full_name == github.repository
-            uses: MishaKav/pytest-coverage-comment@main
+            uses: MishaKav/pytest-coverage-comment@v1.12.3
             with:
                 pytest-coverage-path: ./pytest-coverage.txt
                 title: Coverage Report

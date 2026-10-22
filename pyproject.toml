@@ -7,7 +7,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "wrapt-timeout-decorator>=1.5.1",
 ]
-description = "Add your description here"
+description = "GitHub Action to download artifacts from a dbt Cloud CI job."
 license ={"text"= "MIT License"}
 name = "dbt-cloud-download-artifacts-action"
 readme = "README.md"
@@ -19,7 +19,6 @@ download_artifacts = "dbt_cloud_download_artifacts_action.main:cli"
 
 [project.optional-dependencies]
 dev = [
-    "ipykernel",
     "mypy<2",
     "pre-commit<5",
     "pytest-cov<8",
@@ -29,32 +28,8 @@ dev = [
     "ruff<1",
     "semver<4",
     "sqlfmt<1",
-    "types-pycurl",
     "types-requests",
-    "types-setuptools"
 ]
-
-[tool.black]
-line-length = 99
-include = '/project$|\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.eggs
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | \.vscode
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
 
 [tool.mypy]
 check_untyped_defs = true
