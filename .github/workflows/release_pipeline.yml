@@ -53,7 +53,7 @@
                     -m "v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
                   git push -f origin "v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}"
 
-                  # Tag and push X.X.X
+                  # Tag and push X
                   git tag -f \
                     -a v${{ steps.version.outputs.major }} \
                     -m "v${{ steps.version.outputs.major }}"
