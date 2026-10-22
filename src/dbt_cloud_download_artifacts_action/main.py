@@ -38,6 +38,7 @@ def cli(args: Optional[Namespace] = None) -> None:
         account_id=dbt_account_id,
         output_dir=Path(args.output_dir),
         run_id=dbt_run_id,
+        step=args.step,
     )
 
 

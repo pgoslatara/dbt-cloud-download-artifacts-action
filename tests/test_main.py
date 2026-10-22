@@ -1,6 +1,8 @@
 import logging
 from argparse import Namespace
 
+from responses import matchers
+
 from dbt_cloud_download_artifacts_action.main import cli
 
 from .conftest import (
@@ -77,3 +79,38 @@ def test_main_failed_run_warns_and_downloads(
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
     assert "did not succeed" in warnings[0].getMessage()
+
+
+def test_main_passes_step(mocked_responses, monkeypatch, tmp_path) -> None:
+    """Test that `--step` selects the artifacts of that step in the run."""
+    monkeypatch.setattr(
+        "dbt_cloud_download_artifacts_action.main.arg_parser",
+        lambda: Namespace(
+            commit_sha=COMMIT_SHA,
+            output_dir=tmp_path,
+            repo_name=REPO_NAME,
+            step=4,
+            verbose=False,
+        ),
+    )
+    step_matcher = [matchers.query_param_matcher({"step": "4"})]
+    mocked_responses.get(
+        GITHUB_COMMIT_STATUS_URL, json={"statuses": [dbt_cloud_commit_status()]}
+    )
+    mocked_responses.get(
+        DBT_CLOUD_RUN_URL, json=dbt_cloud_run(is_complete=True, is_success=True)
+    )
+    mocked_responses.get(
+        DBT_CLOUD_ARTIFACTS_URL,
+        json={"data": ["manifest.json"]},
+        match=step_matcher,
+    )
+    mocked_responses.get(
+        f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json",
+        json={"nodes": {}},
+        match=step_matcher,
+    )
+
+    cli()
+
+    assert (tmp_path / "manifest.json").exists()
