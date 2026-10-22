@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Optional
 
 import pytest
 import responses
@@ -35,9 +35,18 @@ def dbt_cloud_commit_status() -> Dict[str, Any]:
 
 
 def dbt_cloud_run(
-    is_complete: bool, in_progress: bool = False, is_success: bool = False
+    is_complete: bool,
+    in_progress: bool = False,
+    is_success: bool = False,
+    artifacts_saved: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Subset of the dbt Cloud `runs/{id}/` response used by the action.
+
+    Args:
+        is_complete (bool): Whether the run is complete.
+        in_progress (bool, optional): Whether the run is in progress. Defaults to False.
+        is_success (bool, optional): Whether the run succeeded. Defaults to False.
+        artifacts_saved (bool, optional): Whether the artifacts are saved. Defaults to `is_complete`.
 
     Returns:
         Dict[str, Any]: The run response.
@@ -45,6 +54,9 @@ def dbt_cloud_run(
     """
     return {
         "data": {
+            "artifacts_saved": is_complete
+            if artifacts_saved is None
+            else artifacts_saved,
             "id": RUN_ID,
             "in_progress": in_progress,
             "is_complete": is_complete,

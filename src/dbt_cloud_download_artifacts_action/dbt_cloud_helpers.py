@@ -127,31 +127,55 @@ def wait_for_dbt_cloud_job_run_status(
     account_id: int,
     run_id: int,
     poll_interval_seconds: int = 10,
+    artifacts_saved_checks: int = 6,
 ) -> bool:
-    """Wait for a dbt Cloud job run to complete.
+    """Wait for a dbt Cloud job run to complete and its artifacts to be saved.
 
     `is_complete` is used rather than `in_progress` as a queued or starting run reports
-    `in_progress: false` but has no artifacts yet.
+    `in_progress: false` but has no artifacts yet. Note that a run can report `is_complete` before
+    `artifacts_saved`, resulting in an empty list which then errors dbt bouncer.
 
     Args:
         account_id (int): The dbt Cloud account ID.
         run_id (int): The ID of the dbt Cloud run.
         poll_interval_seconds (int, optional): Seconds between status checks. Defaults to 10.
+        artifacts_saved_checks (int, optional): How many status checks of a complete run
+            wait for `artifacts_saved` before continuing without it, so a run that never
+            saves artifacts does not block. Defaults to 6, so about a minute with current polling configuration.
 
     Returns:
         bool: True if the run succeeded, False otherwise.
 
     """
+    # Counts only the checks after the run completed, so a long run does not use up
+    # the wait for `artifacts_saved`.
+    complete_checks = 0
     while True:
         logger.info(f"Checking if run {run_id} is complete...")
         run = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
             "data"
         ]
         if run["is_complete"]:
-            break
-        logger.info(
-            f"Run {run_id} is {run.get('status_humanized', 'not complete')}, waiting {poll_interval_seconds}s..."
-        )
+            # dbt Cloud can report a run as complete while it is still saving the
+            # artifacts. Listing them now returns an empty list, so wait for the save.
+            if run["artifacts_saved"]:
+                break
+            complete_checks += 1
+            # Not sure whether dbt turns `artifacts_saved` true on a run
+            # that produced no artifacts (for example, when it's canceled or failed before dbt ran). So, to avoid potentially waiting until timeout, we stop waiting after number of checks.
+            # In that case we let the download report the empty list.
+            if complete_checks >= artifacts_saved_checks:
+                logger.warning(
+                    f"Run {run_id} is complete, but its artifacts were not saved after {complete_checks} checks. Continuing without them."
+                )
+                break
+            logger.info(
+                f"Run {run_id} is complete, waiting {poll_interval_seconds}s for its artifacts to be saved..."
+            )
+        else:
+            logger.info(
+                f"Run {run_id} is {run.get('status_humanized', 'not complete')}, waiting {poll_interval_seconds}s..."
+            )
         time.sleep(poll_interval_seconds)
 
     run_status = run["is_success"]
