@@ -25,7 +25,15 @@ def cli(args: Optional[Namespace] = None) -> None:
     dbt_account_id, dbt_run_id = get_dbt_run_id_per_commit_sha(
         commit_sha=args.commit_sha, repo_name=args.repo_name
     )
-    wait_for_dbt_cloud_job_run_status(account_id=dbt_account_id, run_id=dbt_run_id)
+    run_succeeded = wait_for_dbt_cloud_job_run_status(
+        account_id=dbt_account_id, run_id=dbt_run_id
+    )
+    # We warn here rather than stopping, since a failed run still has artifacts.
+    if not run_succeeded:
+        logging.warning(
+            f"dbt Cloud run {dbt_run_id} did not succeed. Its artifacts exist only if "
+            "dbt itself ran: a run that failed before dbt started has none. See the run in dbt Cloud for the error."
+        )
     get_dbt_job_run_artifacts(
         account_id=dbt_account_id,
         output_dir=Path(args.output_dir),

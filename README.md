@@ -61,6 +61,8 @@ jobs:
             ...
 ```
 
+The action does not check out your repository. If later steps need your repository's files, add `actions/checkout` before this action. A relative `output-dir` resolves against the job's working directory.
+
 # Contributing
 
 Set up a local development environment, requires [uv](https://github.com/astral-sh/uv):
@@ -74,3 +76,5 @@ All tests can be run with
 ```bash
 make test
 ```
+
+Every pull request runs pre-commit and the unit tests (`ci_pipeline.yml`) without access to any secrets. The integration test (`integration_pipeline.yml`) runs the pull request's version of the action against the dbt Cloud CI run for its head commit. For pull requests from forks, this job waits for a maintainer to approve it in the `fork-integration` environment, because it has access to the dbt Cloud API token. Check the diff before you approve.

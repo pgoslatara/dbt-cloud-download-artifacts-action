@@ -1,20 +1,15 @@
 ---
 name: CI pipeline
 
+# Runs the PR's code, including from forks, so this workflow gets no secrets and a
+# read-only token. The dbt Cloud integration test lives in integration_pipeline.yml.
 on:
-  pull_request_target:
+  pull_request:
       branches:
           - main
 
-env:
-  COMMIT_SHA: 347316746c4c387c1c77bc8a800f524242e619a1
-  DBT_ACCOUNT_ID: 12893
-  DBT_CLOUD_API_TOKEN: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-  DBT_PROFILES_DIR: dbt_project
-  DBT_PROJECT_DIR: dbt_project
-  DBT_RUN_ID: 324231603
-  PAT_GITHUB: ${{ secrets.PAT_GITHUB }}
-  REPO_NAME: "pgoslatara/dbt-cloud-download-artifacts-action"
+permissions:
+    contents: read
 
 jobs:
     pre-commit:
@@ -24,9 +19,7 @@ jobs:
               uses: actions/checkout@v5
               with:
                 fetch-depth: "0"
-
-            - name: checkout-merge
-              uses: check-spelling/checkout-merge@v0.0.6
+                persist-credentials: false
 
             - name: Install uv
               uses: astral-sh/setup-uv@v7
@@ -35,53 +28,24 @@ jobs:
               run: uv python install
 
             - name: Install dependencies
-              run: uv venv && source .venv/bin/activate && make install
+              run: make install
 
             - name: Run pre-commit
               run: |
-                git diff --name-status origin/main..HEAD > changed_files.txt
+                git diff --name-only --diff-filter=d origin/main...HEAD > changed_files.txt
                 cat changed_files.txt
-                cat changed_files.txt | xargs uv run pre-commit run --files
-
-    gh-action:
-        needs: [pre-commit]
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write
-            id-token: write
-            issues: write
-            pull-requests: write
-        steps:
-          - uses: actions/checkout@v5
-
-          - name: Download artifacts (maximal options)
-            uses: ./
-            with:
-              commit-sha: ${{ github.event.pull_request.head.sha }}
-              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-              output-dir: dbt_artifacts
-              step: 4
-              verbose: true
-
-          - name: Download artifacts (minimal options)
-            uses: ./
-            with:
-              commit-sha: ${{ github.event.pull_request.head.sha }}
-              dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
+                cat changed_files.txt | xargs --no-run-if-empty uv run pre-commit run --files
 
     unit-tests:
       needs: [pre-commit]
       runs-on: ubuntu-latest
       permissions:
-          contents: write
-          id-token: write
-          issues: write
+          contents: read
           pull-requests: write
       steps:
           - uses: actions/checkout@v5
-
-          - name: checkout-merge
-            uses: check-spelling/checkout-merge@v0.0.6
+            with:
+              persist-credentials: false
 
           - name: Install uv
             uses: astral-sh/setup-uv@v7
@@ -90,29 +54,17 @@ jobs:
             run: uv python install
 
           - name: Install dependencies
-            run: uv venv && source .venv/bin/activate && make install
+            run: make install
 
           - name: Run pytest (unit tests)
             run: make test | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
 
+          # Fork PRs get a read-only token, so they cannot post the comment.
           - name: Pytest coverage comment
+            if: github.event.pull_request.head.repo.full_name == github.repository
             uses: MishaKav/pytest-coverage-comment@main
             with:
                 pytest-coverage-path: ./pytest-coverage.txt
                 title: Coverage Report
                 badge-title: Coverage
                 junitxml-path: ./coverage.xml
-
-    download-artifacts:
-      runs-on: ubuntu-latest
-      permissions:
-          id-token: write
-      steps:
-        - name: Download dbt artifacts
-          uses: pgoslatara/dbt-cloud-download-artifacts-action@main
-          with:
-            commit-sha: ${{ github.event.pull_request.head.sha }}
-            dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
-            output-dir: target
-            step: 4
-            verbose: true
