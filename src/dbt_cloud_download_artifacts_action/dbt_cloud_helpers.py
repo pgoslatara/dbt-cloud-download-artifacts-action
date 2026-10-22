@@ -32,8 +32,14 @@ class DbtCloudAuth(AuthBase):
         Returns:
             requests.Response: The response from the dbt Cloud API.
 
+        Raises:
+            ValueError: If DBT_CLOUD_API_TOKEN is not set.
+
         """
-        r.headers["Authorization"] = f"Token {os.getenv('DBT_CLOUD_API_TOKEN')}"
+        token = os.getenv("DBT_CLOUD_API_TOKEN")
+        if not token:
+            raise ValueError("'DBT_CLOUD_API_TOKEN' environment variable is not set.")
+        r.headers["Authorization"] = f"Token {token}"
         return r
 
 
@@ -133,6 +139,7 @@ def wait_for_dbt_cloud_job_run_status(
     run_id: int,
     poll_interval_seconds: int = 10,
     artifacts_saved_checks: int = 6,
+    max_wait_seconds: int = 1800,
 ) -> bool:
     """Wait for a dbt Cloud job run to complete and its artifacts to be saved.
 
@@ -147,15 +154,24 @@ def wait_for_dbt_cloud_job_run_status(
         artifacts_saved_checks (int, optional): How many status checks of a complete run
             wait for `artifacts_saved` before continuing without it, so a run that never
             saves artifacts does not block. Defaults to 6, so about a minute with current polling configuration.
+        max_wait_seconds (int, optional): Maximum seconds to wait for the run to complete. Defaults to 1800.
 
     Returns:
         bool: True if the run succeeded, False otherwise.
 
+    Raises:
+        TimeoutError: If the run does not complete within max_wait_seconds.
+
     """
+    deadline = time.monotonic() + max_wait_seconds
     # Counts only the checks after the run completed, so a long run does not use up
     # the wait for `artifacts_saved`.
     complete_checks = 0
     while True:
+        if time.monotonic() >= deadline:
+            raise TimeoutError(
+                f"Timed out waiting for dbt Cloud run {run_id} to complete after {max_wait_seconds}s."
+            )
         logger.info(f"Checking if run {run_id} is complete...")
         run = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
             "data"

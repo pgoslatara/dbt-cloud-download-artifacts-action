@@ -3,10 +3,12 @@ import logging
 from pathlib import Path
 
 import pytest
+import requests
 from responses import matchers
 from tenacity import stop_after_attempt, wait_fixed
 
 from dbt_cloud_download_artifacts_action.dbt_cloud_helpers import (
+    DbtCloudAuth,
     call_dbt_cloud_api,
     get_dbt_job_run_artifacts,
     wait_for_dbt_cloud_job_run_status,
@@ -213,3 +215,21 @@ def test_wait_for_dbt_cloud_job_run_status_failed_run(mocked_responses):
     assert not wait_for_dbt_cloud_job_run_status(
         account_id=ACCOUNT_ID, run_id=RUN_ID, poll_interval_seconds=0
     )
+
+
+def test_dbt_cloud_auth_missing_token(monkeypatch):
+    """Test that missing DBT_CLOUD_API_TOKEN raises ValueError."""
+    monkeypatch.delenv("DBT_CLOUD_API_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="DBT_CLOUD_API_TOKEN"):
+        DbtCloudAuth()(requests.Request())
+
+
+def test_wait_for_dbt_cloud_job_run_status_timeout():
+    """Test that polling times out when max_wait_seconds is exceeded."""
+    with pytest.raises(TimeoutError, match="Timed out waiting"):
+        wait_for_dbt_cloud_job_run_status(
+            account_id=ACCOUNT_ID,
+            run_id=RUN_ID,
+            poll_interval_seconds=0,
+            max_wait_seconds=0,
+        )
