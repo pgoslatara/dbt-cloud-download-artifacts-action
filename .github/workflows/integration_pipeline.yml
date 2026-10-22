@@ -24,7 +24,7 @@ jobs:
             statuses: read
         steps:
           # Pinned to the head SHA from the event, so commits pushed after approval are not run.
-          - uses: actions/checkout@v5
+          - uses: actions/checkout@v7
             with:
               persist-credentials: false
               ref: ${{ github.event.pull_request.head.sha }}
