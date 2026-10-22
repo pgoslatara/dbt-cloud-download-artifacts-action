@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -123,6 +124,43 @@ def test_wait_for_dbt_cloud_job_run_status_queued_run(mocked_responses):
         account_id=ACCOUNT_ID, run_id=RUN_ID, poll_interval_seconds=0
     )
     assert len(mocked_responses.calls) == 3
+
+
+def test_wait_for_dbt_cloud_job_run_status_artifacts_not_yet_saved(mocked_responses):
+    """Test that a complete run is waited for until its artifacts are saved."""
+    mocked_responses.get(
+        DBT_CLOUD_RUN_URL,
+        json=dbt_cloud_run(is_complete=True, is_success=True, artifacts_saved=False),
+    )
+    mocked_responses.get(
+        DBT_CLOUD_RUN_URL, json=dbt_cloud_run(is_complete=True, is_success=True)
+    )
+
+    assert wait_for_dbt_cloud_job_run_status(
+        account_id=ACCOUNT_ID, run_id=RUN_ID, poll_interval_seconds=0
+    )
+    assert len(mocked_responses.calls) == 2
+
+
+def test_wait_for_dbt_cloud_job_run_status_artifacts_never_saved(
+    caplog, mocked_responses
+):
+    """Test that a complete run whose artifacts are never saved does not hang."""
+    mocked_responses.get(
+        DBT_CLOUD_RUN_URL,
+        json=dbt_cloud_run(is_complete=True, is_success=True, artifacts_saved=False),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        assert wait_for_dbt_cloud_job_run_status(
+            account_id=ACCOUNT_ID,
+            run_id=RUN_ID,
+            poll_interval_seconds=0,
+            artifacts_saved_checks=3,
+        )
+
+    assert len(mocked_responses.calls) == 3
+    assert "artifacts were not saved" in caplog.text
 
 
 def test_wait_for_dbt_cloud_job_run_status_failed_run(mocked_responses):
