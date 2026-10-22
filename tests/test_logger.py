@@ -1,7 +1,8 @@
 from argparse import Namespace
 
 import pytest
-from tenacity import RetryError, stop_after_delay
+from requests.exceptions import ConnectionError as RequestsConnectionError
+from tenacity import stop_after_delay
 
 from dbt_cloud_download_artifacts_action.dbt_cloud_helpers import (
     call_dbt_cloud_api,
@@ -28,7 +29,7 @@ def test_logging_debug(monkeypatch) -> None:
         ),
     )
 
-    with catch_logs() as handler, pytest.raises(RetryError):
+    with catch_logs() as handler, pytest.raises(RequestsConnectionError):
         cli()
 
     assert (
@@ -57,7 +58,7 @@ def test_logging_info(monkeypatch) -> None:
         ),
     )
 
-    with catch_logs() as handler, pytest.raises(RetryError):
+    with catch_logs() as handler, pytest.raises(RequestsConnectionError):
         cli()
 
     assert (

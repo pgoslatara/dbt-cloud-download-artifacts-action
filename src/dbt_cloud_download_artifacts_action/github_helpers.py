@@ -1,15 +1,30 @@
 import logging
 import os
+import re
 import time
 from typing import Any, Dict, Optional
 
-from requests import HTTPError
 from requests.auth import AuthBase
-from requests.structures import CaseInsensitiveDict
-from tenacity import retry, stop_after_delay, wait_fixed
+from tenacity import (
+    retry,
+    retry_if_not_exception_type,
+    stop_after_delay,
+    wait_fixed,
+)
 from wrapt_timeout_decorator import timeout
 
-from dbt_cloud_download_artifacts_action.utils import create_requests_session
+from dbt_cloud_download_artifacts_action.utils import (
+    REQUEST_TIMEOUT_SECONDS,
+    NonRetryableHTTPError,
+    create_requests_session,
+    raise_for_status,
+)
+
+# Run URL that dbt Cloud posts as the `target_url` of its commit status, e.g.
+# https://cloud.getdbt.com/deploy/<account_id>/projects/<project_id>/runs/<run_id>/
+DBT_CLOUD_RUN_URL_PATTERN = re.compile(
+    r"/deploy/(?P<account_id>\d+)/projects/\d+/runs/(?P<run_id>\d+)"
+)
 
 
 class GitHubAuth(AuthBase):
@@ -22,7 +37,7 @@ class GitHubAuth(AuthBase):
             requests.Response: The response from the GitHub API.
 
         """
-        r.headers = CaseInsensitiveDict(
+        r.headers.update(
             {
                 "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {os.getenv('PAT_GITHUB')}",
@@ -32,7 +47,12 @@ class GitHubAuth(AuthBase):
         return r
 
 
-@retry(stop=stop_after_delay(90), wait=wait_fixed(5))
+@retry(
+    reraise=True,
+    retry=retry_if_not_exception_type(NonRetryableHTTPError),
+    stop=stop_after_delay(90),
+    wait=wait_fixed(5),
+)
 def call_github_api(
     endpoint: str,
     params: Optional[Dict[str, Any]] = None,
@@ -43,9 +63,6 @@ def call_github_api(
         endpoint (str): The GitHub API endpoint.
         params (Dict, optional): Defaults to None.
 
-    Raises:
-        RuntimeError: If the response status code is not 200.
-
     Returns:
         Dict
 
@@ -53,15 +70,10 @@ def call_github_api(
     r = create_requests_session().get(
         auth=GitHubAuth(),
         params=params,
+        timeout=REQUEST_TIMEOUT_SECONDS,
         url=f"https://api.github.com/{endpoint}",
     )
-
-    try:
-        r.raise_for_status()
-    except HTTPError as e:
-        logging.error(f"{r.status_code=}")
-        logging.error(f"{r.content=}")
-        raise RuntimeError(e) from e
+    raise_for_status(r)
 
     logging.debug(f"Response: {r.status_code}, {r.reason}")
     return r.json()
@@ -82,6 +94,9 @@ def get_dbt_run_id_per_commit_sha(commit_sha: str, repo_name: str) -> tuple[int,
     Returns:
         tuple(int, int): The dbt account id and dbt run id associated with the commit_sha.
 
+    Raises:
+        RuntimeError: If the dbt Cloud commit status does not link to a run.
+
     """
     # Using a `while` loop to allow for a (short) delay between the commit being pushed and the dbt Cloud CI job starting.
     latest_check = []
@@ -100,8 +115,13 @@ def get_dbt_run_id_per_commit_sha(commit_sha: str, repo_name: str) -> tuple[int,
         time.sleep(5)
 
     dbt_ci_job_url = latest_check[0]["target_url"]
-    dbt_account_id = int(dbt_ci_job_url.split("/")[-6])
-    dbt_run_id = int(dbt_ci_job_url.split("/")[-2])
+    match = DBT_CLOUD_RUN_URL_PATTERN.search(dbt_ci_job_url or "")
+    if match is None:
+        raise RuntimeError(
+            f"Could not parse the dbt Cloud account and run id from {dbt_ci_job_url!r}."
+        )
+    dbt_account_id = int(match["account_id"])
+    dbt_run_id = int(match["run_id"])
 
     logging.debug(f"{dbt_account_id=}")
     logging.debug(f"{dbt_run_id=}")
