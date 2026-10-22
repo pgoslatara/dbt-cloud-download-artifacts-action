@@ -66,15 +66,29 @@ jobs:
 
 | Input | Required | Default | Description |
 |---|---|---|---|
+| `artifacts` | No | All JSON artifacts | Comma-separated list of artifact names to download (e.g. `manifest.json,run_results.json`). |
 | `commit-sha` | Yes | | SHA of the commit that triggered the dbt Cloud CI job, usually `github.event.pull_request.head.sha`. |
 | `dbt-cloud-api-token` | Yes | | dbt Cloud API token with read access to the CI job's runs. |
-| `dbt-cloud-api-url-base` | No | `cloud.getdbt.com` | Host of the dbt Cloud API, e.g. `ab123.us1.dbt.com` for a cell-based account. |
-| `output-dir` | No | `.` | Directory where the artifacts are saved. The action fails rather than overwrite an existing file. |
+| `dbt-cloud-api-url-base` | No | Auto-detected / `cloud.getdbt.com` | Host of the dbt Cloud API, e.g. `ab123.us1.dbt.com`. Automatically detected from commit status URL if omitted. |
+| `fail-on-run-failure` | No | `false` | Fail the action if the dbt Cloud CI job did not succeed. |
+| `job-timeout` | No | `1800` | Maximum seconds to wait for the dbt Cloud job run to complete. |
+| `output-dir` | No | `.` | Directory where the artifacts are saved. |
+| `overwrite` | No | `false` | Overwrite existing artifact files if they already exist. |
 | `repo-name` | No | `${{ github.repository }}` | Repository that holds the commit, in the form `<owner>/<repo>`. |
 | `step` | No | Last step | Index of the step in the run to download artifacts from. The first step has index 1. |
 | `verbose` | No | `false` | Log at debug level. |
+| `wait-timeout` | No | `120` | Maximum seconds to wait for dbt Cloud CI commit status to appear. |
 
-The action reads the commit status with the job's `GITHUB_TOKEN`, so the job needs the `statuses: read` permission.
+### Outputs
+
+| Output | Description |
+|---|---|
+| `account-id` | dbt Cloud account ID. |
+| `artifacts` | Comma-separated paths to downloaded artifacts. |
+| `run-id` | dbt Cloud run ID. |
+| `run-status` | Status of the dbt Cloud run (`success` or `failure`). |
+
+The action reads the commit status with the job's `GITHUB_TOKEN` (or `PAT_GITHUB`), so the job needs the `statuses: read` permission.
 
 The action does not check out your repository. If later steps need your repository's files, add `actions/checkout` before this action. A relative `output-dir` resolves against the job's working directory.
 

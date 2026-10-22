@@ -3,12 +3,10 @@ import logging
 from pathlib import Path
 
 import pytest
-import requests
 from responses import matchers
 from tenacity import stop_after_attempt, wait_fixed
 
 from dbt_cloud_download_artifacts_action.dbt_cloud_helpers import (
-    DbtCloudAuth,
     call_dbt_cloud_api,
     get_dbt_job_run_artifacts,
     wait_for_dbt_cloud_job_run_status,
@@ -220,13 +218,48 @@ def test_wait_for_dbt_cloud_job_run_status_failed_run(mocked_responses):
 def test_dbt_cloud_auth_missing_token(monkeypatch):
     """Test that missing DBT_CLOUD_API_TOKEN raises ValueError."""
     monkeypatch.delenv("DBT_CLOUD_API_TOKEN", raising=False)
-    with pytest.raises(ValueError, match="DBT_CLOUD_API_TOKEN"):
-        DbtCloudAuth()(requests.Request())
+    with pytest.raises(
+        ValueError, match="Environment variable 'DBT_CLOUD_API_TOKEN' is not set."
+    ):
+        call_dbt_cloud_api(account_id=ACCOUNT_ID, endpoint="projects/")
+
+
+def test_get_dbt_job_run_artifacts_overwrite(mocked_responses, tmp_path):
+    """Test that an existing artifact is overwritten when overwrite=True."""
+    mocked_responses.get(DBT_CLOUD_ARTIFACTS_URL, json={"data": ["manifest.json"]})
+    mocked_responses.get(f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json", json=MANIFEST)
+    file_path = tmp_path / "manifest.json"
+    file_path.write_text("old_content")
+
+    downloaded = get_dbt_job_run_artifacts(
+        account_id=ACCOUNT_ID, run_id=RUN_ID, output_dir=tmp_path, overwrite=True
+    )
+    assert downloaded == [str(file_path)]
+    assert json.loads(file_path.read_text()) == MANIFEST
+
+
+def test_get_dbt_job_run_artifacts_filtered(mocked_responses, tmp_path):
+    """Test that only specifically requested artifacts are downloaded."""
+    mocked_responses.get(
+        DBT_CLOUD_ARTIFACTS_URL,
+        json={"data": ["manifest.json", "run_results.json", "catalog.json"]},
+    )
+    mocked_responses.get(f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json", json=MANIFEST)
+
+    downloaded = get_dbt_job_run_artifacts(
+        account_id=ACCOUNT_ID,
+        run_id=RUN_ID,
+        output_dir=tmp_path,
+        artifacts=["manifest.json"],
+    )
+    assert downloaded == [str(tmp_path / "manifest.json")]
+    assert (tmp_path / "manifest.json").exists()
+    assert not (tmp_path / "run_results.json").exists()
 
 
 def test_wait_for_dbt_cloud_job_run_status_timeout():
-    """Test that polling times out when max_wait_seconds is exceeded."""
-    with pytest.raises(TimeoutError, match="Timed out waiting"):
+    """Test that wait_for_dbt_cloud_job_run_status times out when max_wait_seconds is exceeded."""
+    with pytest.raises(TimeoutError, match="did not complete within 0s"):
         wait_for_dbt_cloud_job_run_status(
             account_id=ACCOUNT_ID,
             run_id=RUN_ID,

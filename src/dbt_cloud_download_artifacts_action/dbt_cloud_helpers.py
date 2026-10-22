@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -38,7 +37,7 @@ class DbtCloudAuth(AuthBase):
         """
         token = os.getenv("DBT_CLOUD_API_TOKEN")
         if not token:
-            raise ValueError("'DBT_CLOUD_API_TOKEN' environment variable is not set.")
+            raise ValueError("Environment variable 'DBT_CLOUD_API_TOKEN' is not set.")
         r.headers["Authorization"] = f"Token {token}"
         return r
 
@@ -52,6 +51,7 @@ class DbtCloudAuth(AuthBase):
 def call_dbt_cloud_api(
     account_id: int,
     endpoint: str,
+    api_url_base: Optional[str] = None,
     params: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Call the dbt Cloud API with a GET request and return the response as a dictionary.
@@ -59,13 +59,18 @@ def call_dbt_cloud_api(
     Args:
         account_id (int): The dbt Cloud account ID.
         endpoint (str): The dbt Cloud API endpoint.
+        api_url_base (str, optional): Base URL of the dbt Cloud API. Defaults to None.
         params (Dict, optional): Defaults to None.
 
     Returns:
         Dict
 
     """
-    base_url = f"https://{os.getenv('DBT_CLOUD_API_URL_BASE', 'cloud.getdbt.com')}/api/v2/accounts/{account_id}/"
+    base_host = (
+        api_url_base or os.getenv("DBT_CLOUD_API_URL_BASE") or "cloud.getdbt.com"
+    )
+    base_host = base_host.replace("https://", "").replace("http://", "").rstrip("/")
+    base_url = f"https://{base_host}/api/v2/accounts/{account_id}/"
     r = create_requests_session().get(
         auth=DbtCloudAuth(),
         params=params,
@@ -78,22 +83,76 @@ def call_dbt_cloud_api(
     return r.json()
 
 
+@retry(
+    reraise=True,
+    retry=retry_if_not_exception_type(NonRetryableHTTPError),
+    stop=stop_after_delay(30),
+    wait=wait_fixed(3),
+)
+def download_dbt_artifact_file(
+    account_id: int,
+    artifact_name: str,
+    destination_path: Path,
+    run_id: int,
+    api_url_base: Optional[str] = None,
+    params: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Download a single artifact file from dbt Cloud directly to disk using streaming.
+
+    Args:
+        account_id (int): The dbt Cloud account ID.
+        artifact_name (str): The name of the artifact file (e.g. manifest.json).
+        destination_path (Path): Path to save the downloaded file to.
+        run_id (int): The ID of the dbt Cloud run.
+        api_url_base (str, optional): Base URL of the dbt Cloud API. Defaults to None.
+        params (Dict, optional): Query parameters. Defaults to None.
+
+    """
+    base_host = (
+        api_url_base or os.getenv("DBT_CLOUD_API_URL_BASE") or "cloud.getdbt.com"
+    )
+    base_host = base_host.replace("https://", "").replace("http://", "").rstrip("/")
+    url = f"https://{base_host}/api/v2/accounts/{account_id}/runs/{run_id}/artifacts/{artifact_name}"
+    r = create_requests_session().get(
+        auth=DbtCloudAuth(),
+        params=params,
+        stream=True,
+        timeout=REQUEST_TIMEOUT_SECONDS,
+        url=url,
+    )
+    raise_for_status(r)
+
+    destination_path.parent.mkdir(exist_ok=True, parents=True)
+    with destination_path.open("wb") as outfile:
+        for chunk in r.iter_content(chunk_size=65536):
+            outfile.write(chunk)
+
+
 def get_dbt_job_run_artifacts(
     account_id: int,
     output_dir: Path,
     run_id: int,
+    api_url_base: Optional[str] = None,
+    artifacts: Optional[list[str]] = None,
+    overwrite: bool = False,
     step: Union[int, None] = None,
-) -> None:
-    """Get the artifacts for a given dbt Cloud run and save as a file.
+) -> list[str]:
+    """Get the artifacts for a given dbt Cloud run and save as files.
 
     Args:
         account_id (int): The dbt Cloud account ID.
-        run_id (int): The ID of the dbt Cloud run.
         output_dir (Path): The full path to the directory where files will be saved.
+        run_id (int): The ID of the dbt Cloud run.
+        api_url_base (str, optional): Base URL of the dbt Cloud API. Defaults to None.
+        artifacts (list[str], optional): Specific artifact names to download. Defaults to all JSON artifacts.
+        overwrite (bool, optional): Whether to overwrite existing files. Defaults to False.
         step (int, optional): The step number of the dbt Cloud job. Defaults to None, will download from the last step.
 
+    Returns:
+        list[str]: List of paths to the saved artifact files.
+
     Raises:
-        FileExistsError: If the file already exists.
+        FileExistsError: If an artifact file already exists and overwrite is False.
         RuntimeError: If the run has no artifacts.
 
     """
@@ -103,40 +162,50 @@ def get_dbt_job_run_artifacts(
     r = call_dbt_cloud_api(
         account_id=account_id,
         endpoint=f"runs/{run_id}/artifacts/",
+        api_url_base=api_url_base,
         params=params,
     )
     if not r["data"]:
         raise RuntimeError(
             f"dbt Cloud run {run_id} has no artifacts, did the run produce any?"
         )
-    json_artifacts = [x for x in r["data"] if x.endswith(".json")]
-    logger.debug(f"{json_artifacts=}")
-    for artifact_name in json_artifacts:
+
+    if artifacts:
+        selected_artifacts = [x for x in r["data"] if x in artifacts]
+    else:
+        selected_artifacts = [x for x in r["data"] if x.endswith(".json")]
+
+    logger.debug(f"{selected_artifacts=}")
+    downloaded_files: list[str] = []
+    for artifact_name in selected_artifacts:
         logger.info(f"Downloading {artifact_name} for run id {run_id}...")
 
         artifact_file_path = output_dir / artifact_name
-        if artifact_file_path.exists():
+        if artifact_file_path.exists() and not overwrite:
             raise FileExistsError(
                 f"File {artifact_file_path} already exists, cancelling download."
             )
 
-        response = call_dbt_cloud_api(
-            account_id=account_id,
-            endpoint=f"runs/{run_id}/artifacts/{artifact_name}",
-            params=params,
-        )
-
-        Path.mkdir(Path(artifact_file_path).parent, exist_ok=True, parents=True)
         logger.info(
             f"Saving {artifact_name} for run id {run_id} to {artifact_file_path}..."
         )
-        with Path.open(artifact_file_path, "w") as outfile:
-            json.dump(response, outfile)
+        download_dbt_artifact_file(
+            account_id=account_id,
+            artifact_name=artifact_name,
+            destination_path=artifact_file_path,
+            run_id=run_id,
+            api_url_base=api_url_base,
+            params=params,
+        )
+        downloaded_files.append(str(artifact_file_path))
+
+    return downloaded_files
 
 
 def wait_for_dbt_cloud_job_run_status(
     account_id: int,
     run_id: int,
+    api_url_base: Optional[str] = None,
     poll_interval_seconds: int = 10,
     artifacts_saved_checks: int = 6,
     max_wait_seconds: int = 1800,
@@ -150,6 +219,7 @@ def wait_for_dbt_cloud_job_run_status(
     Args:
         account_id (int): The dbt Cloud account ID.
         run_id (int): The ID of the dbt Cloud run.
+        api_url_base (str, optional): Base URL of the dbt Cloud API. Defaults to None.
         poll_interval_seconds (int, optional): Seconds between status checks. Defaults to 10.
         artifacts_saved_checks (int, optional): How many status checks of a complete run
             wait for `artifacts_saved` before continuing without it, so a run that never
@@ -163,19 +233,21 @@ def wait_for_dbt_cloud_job_run_status(
         TimeoutError: If the run does not complete within max_wait_seconds.
 
     """
-    deadline = time.monotonic() + max_wait_seconds
     # Counts only the checks after the run completed, so a long run does not use up
     # the wait for `artifacts_saved`.
     complete_checks = 0
+    start_time = time.monotonic()
     while True:
-        if time.monotonic() >= deadline:
+        if time.monotonic() - start_time > max_wait_seconds:
             raise TimeoutError(
-                f"Timed out waiting for dbt Cloud run {run_id} to complete after {max_wait_seconds}s."
+                f"dbt Cloud run {run_id} did not complete within {max_wait_seconds}s."
             )
         logger.info(f"Checking if run {run_id} is complete...")
-        run = call_dbt_cloud_api(account_id=account_id, endpoint=f"runs/{run_id}/")[
-            "data"
-        ]
+        run = call_dbt_cloud_api(
+            account_id=account_id,
+            endpoint=f"runs/{run_id}/",
+            api_url_base=api_url_base,
+        )["data"]
         if run["is_complete"]:
             # dbt Cloud can report a run as complete while it is still saving the
             # artifacts. Listing them now returns an empty list, so wait for the save.
