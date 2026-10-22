@@ -89,10 +89,13 @@ def get_dbt_job_run_artifacts(
         RuntimeError: If the run has no artifacts.
 
     """
+    # dbt Cloud returns the artifacts of the last step when `step` is omitted.
+    params = {"step": step} if step is not None else None
     logger.info("Determining which artifacts are available...")
     r = call_dbt_cloud_api(
         account_id=account_id,
         endpoint=f"runs/{run_id}/artifacts/",
+        params=params,
     )
     if not r["data"]:
         raise RuntimeError(
@@ -109,11 +112,11 @@ def get_dbt_job_run_artifacts(
                 f"File {artifact_file_path} already exists, cancelling download."
             )
 
-        endpoint = f"runs/{run_id}/artifacts/{artifact_name}"
-        if step is not None:
-            endpoint += f"?step={step}"
-
-        response = call_dbt_cloud_api(account_id=account_id, endpoint=endpoint)
+        response = call_dbt_cloud_api(
+            account_id=account_id,
+            endpoint=f"runs/{run_id}/artifacts/{artifact_name}",
+            params=params,
+        )
 
         Path.mkdir(Path(artifact_file_path).parent, exist_ok=True, parents=True)
         logger.info(

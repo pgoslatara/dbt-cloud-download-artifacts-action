@@ -86,7 +86,11 @@ def test_get_dbt_job_run_artifacts_already_exists(mocked_responses, tmp_path):
 
 def test_get_dbt_job_run_artifacts_with_step(mocked_responses, tmp_path):
     """Test that the step is passed as a query parameter."""
-    mocked_responses.get(DBT_CLOUD_ARTIFACTS_URL, json={"data": ["manifest.json"]})
+    mocked_responses.get(
+        DBT_CLOUD_ARTIFACTS_URL,
+        json={"data": ["manifest.json"]},
+        match=[matchers.query_param_matcher({"step": "4"})],
+    )
     mocked_responses.get(
         f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json",
         json=MANIFEST,
