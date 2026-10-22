@@ -5,12 +5,20 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
-from requests import HTTPError
 from requests.auth import AuthBase
-from requests.structures import CaseInsensitiveDict
-from tenacity import retry, stop_after_delay, wait_fixed
+from tenacity import (
+    retry,
+    retry_if_not_exception_type,
+    stop_after_delay,
+    wait_fixed,
+)
 
-from dbt_cloud_download_artifacts_action.utils import create_requests_session
+from dbt_cloud_download_artifacts_action.utils import (
+    REQUEST_TIMEOUT_SECONDS,
+    NonRetryableHTTPError,
+    create_requests_session,
+    raise_for_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,15 +33,16 @@ class DbtCloudAuth(AuthBase):
             requests.Response: The response from the dbt Cloud API.
 
         """
-        r.headers = CaseInsensitiveDict(
-            {
-                "Authorization": f"Token {os.getenv('DBT_CLOUD_API_TOKEN')}",
-            }
-        )
+        r.headers["Authorization"] = f"Token {os.getenv('DBT_CLOUD_API_TOKEN')}"
         return r
 
 
-@retry(stop=stop_after_delay(30), wait=wait_fixed(3))
+@retry(
+    reraise=True,
+    retry=retry_if_not_exception_type(NonRetryableHTTPError),
+    stop=stop_after_delay(30),
+    wait=wait_fixed(3),
+)
 def call_dbt_cloud_api(
     account_id: int,
     endpoint: str,
@@ -49,22 +58,15 @@ def call_dbt_cloud_api(
     Returns:
         Dict
 
-    Raises:
-        RuntimeError: If the response status code is not 200.
-
     """
     base_url = f"https://{os.getenv('DBT_CLOUD_API_URL_BASE', 'cloud.getdbt.com')}/api/v2/accounts/{account_id}/"
     r = create_requests_session().get(
         auth=DbtCloudAuth(),
         params=params,
+        timeout=REQUEST_TIMEOUT_SECONDS,
         url=f"{base_url}{endpoint}",
     )
-    try:
-        r.raise_for_status()
-    except HTTPError as e:
-        logger.error(f"{r.status_code=}")
-        logger.error(f"{r.content=}")
-        raise RuntimeError(e) from e
+    raise_for_status(r)
 
     logger.debug(f"Response: {r.status_code}, {r.reason}")
     return r.json()
