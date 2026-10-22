@@ -29,7 +29,9 @@
 
 # dbt-cloud-download-artifacts-action
 
-GitHub Action to download JSON artifacts from a dbt Cloud CI job triggered by a pull request.
+GitHub Action to download JSON artifacts (e.g. `manifest.json`, `run_results.json`) from a dbt Cloud CI job triggered by a pull request.
+
+The action finds the dbt Cloud run through the "dbt Cloud" commit status that dbt Cloud posts on the pull request's head commit, waits for the run to complete and then downloads its JSON artifacts. If the run fails, the action logs a warning and still downloads any artifacts the run produced.
 
 # How to use
 
@@ -44,7 +46,8 @@ on:
 jobs:
     download-dbt-artifacts:
         permissions:
-          pull-requests: write
+          contents: read
+          statuses: read
         runs-on: ubuntu-latest
         steps:
           - name: Download dbt artifacts
@@ -53,13 +56,25 @@ jobs:
               commit-sha: ${{ github.event.pull_request.head.sha }}
               dbt-cloud-api-token: ${{ secrets.DBT_CLOUD_API_TOKEN }}
               dbt-cloud-api-url-base: cloud.getdbt.com # Optional: Defaults to "cloud.getdbt.com".
-              output-dir: target # Optional: Defaults to "target".
+              output-dir: target # Optional: Defaults to ".".
               step: 4 # Optional: Defaults to last step in CI job.
               verbose: true # Optional: Defaults to false.
 
           - name: Do something with the artifacts
             ...
 ```
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `commit-sha` | Yes | | SHA of the commit that triggered the dbt Cloud CI job, usually `github.event.pull_request.head.sha`. |
+| `dbt-cloud-api-token` | Yes | | dbt Cloud API token with read access to the CI job's runs. |
+| `dbt-cloud-api-url-base` | No | `cloud.getdbt.com` | Host of the dbt Cloud API, e.g. `ab123.us1.dbt.com` for a cell-based account. |
+| `output-dir` | No | `.` | Directory where the artifacts are saved. The action fails rather than overwrite an existing file. |
+| `repo-name` | No | `${{ github.repository }}` | Repository that holds the commit, in the form `<owner>/<repo>`. |
+| `step` | No | Last step | Index of the step in the run to download artifacts from. The first step has index 1. |
+| `verbose` | No | `false` | Log at debug level. |
+
+The action reads the commit status with the job's `GITHUB_TOKEN`, so the job needs the `statuses: read` permission.
 
 The action does not check out your repository. If later steps need your repository's files, add `actions/checkout` before this action. A relative `output-dir` resolves against the job's working directory.
 

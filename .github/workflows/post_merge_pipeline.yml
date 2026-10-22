@@ -6,6 +6,10 @@ on:
         branches:
             - main
 
+# Pushes and PR operations use PAT_GITHUB, so GITHUB_TOKEN only needs to read.
+permissions:
+    contents: read
+
 env:
     GH_TOKEN: ${{ secrets.PAT_GITHUB }}
 
@@ -16,7 +20,7 @@ jobs:
           pr_num: ${{ steps.poll-pr.outputs.PR_NUM }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                     token: ${{ secrets.PAT_GITHUB }}
 
@@ -27,7 +31,7 @@ jobs:
               run: git push origin --delete test-action || true
 
             - id: commit
-              uses: EndBug/add-and-commit@v9
+              uses: EndBug/add-and-commit@cc9c08ba6c8df3b93a8f2db63e89b98368ae2ae8 # v11.1.1
               with:
                     author_name: github-actions[bot]
                     author_email: bot@github.com
@@ -42,9 +46,11 @@ jobs:
 
             - name: Poll checks of triggered PR
               id: poll-pr
+              env:
+                PR_URL: ${{ steps.create-ci-pr.outputs.PR_URL }}
               run: |
                     sleep 10 # Need to wait for PR to be initialised
-                    export PR_NUM=$(echo "${{ steps.create-ci-pr.outputs.PR_URL }}" | cut -d / -f 7)
+                    export PR_NUM=$(echo "$PR_URL" | cut -d / -f 7)
                     echo $PR_NUM
                     echo "PR_NUM=$PR_NUM" >> $GITHUB_OUTPUT
                     gh pr checks $PR_NUM --fail-fast --watch
@@ -54,7 +60,7 @@ jobs:
         needs: [create-and-poll-new-pr]
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Close PR
               env:
