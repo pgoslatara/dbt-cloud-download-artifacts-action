@@ -19,7 +19,7 @@ download_artifacts = "dbt_cloud_download_artifacts_action.main:cli"
 
 [project.optional-dependencies]
 dev = [
-    "mypy<2",
+    "mypy<3",
     "pre-commit<5",
     "pytest-cov<8",
     "pytest<10",
