@@ -36,12 +36,19 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def configure_console_logging(verbose: int):
+def configure_console_logging(verbose: bool) -> None:
     """Initialise a logger with the specified log level."""
     logger = logging.getLogger("")
     logger.propagate = True
-    loglevel = logging.INFO if verbose is False else logging.DEBUG
+    loglevel = logging.DEBUG if verbose else logging.INFO
     logger.setLevel(loglevel)
+
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler) and isinstance(
+            handler.formatter, CustomFormatter
+        ):
+            handler.setLevel(loglevel)
+            return
 
     console_handler = logging.StreamHandler()
     console_handler.setLevel(loglevel)

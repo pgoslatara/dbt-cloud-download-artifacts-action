@@ -51,8 +51,16 @@ def test_dbt_cloud_api_custom_url_base(mocked_responses, monkeypatch):
 
 def test_dbt_cloud_api_client_error_not_retried(mocked_responses, monkeypatch):
     """Test that an invalid endpoint fails on the first attempt."""
-    monkeypatch.setattr(call_dbt_cloud_api.retry, "stop", stop_after_attempt(3))
-    monkeypatch.setattr(call_dbt_cloud_api.retry, "wait", wait_fixed(0))
+    monkeypatch.setattr(
+        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        "stop",
+        stop_after_attempt(3),
+    )
+    monkeypatch.setattr(
+        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        "wait",
+        wait_fixed(0),
+    )
     mocked_responses.get(f"{DBT_CLOUD_ACCOUNT_URL}/non_existent_endpoint/", status=404)
 
     with pytest.raises(NonRetryableHTTPError, match="404"):
@@ -64,8 +72,16 @@ def test_dbt_cloud_api_client_error_not_retried(mocked_responses, monkeypatch):
 @pytest.mark.parametrize("status", [429, 500, 503])
 def test_dbt_cloud_api_transient_error_retried(mocked_responses, monkeypatch, status):
     """Test that rate limiting and server errors are retried."""
-    monkeypatch.setattr(call_dbt_cloud_api.retry, "stop", stop_after_attempt(3))
-    monkeypatch.setattr(call_dbt_cloud_api.retry, "wait", wait_fixed(0))
+    monkeypatch.setattr(
+        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        "stop",
+        stop_after_attempt(3),
+    )
+    monkeypatch.setattr(
+        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        "wait",
+        wait_fixed(0),
+    )
     mocked_responses.get(f"{DBT_CLOUD_ACCOUNT_URL}/projects/", status=status)
     mocked_responses.get(
         f"{DBT_CLOUD_ACCOUNT_URL}/projects/",
@@ -197,3 +213,56 @@ def test_wait_for_dbt_cloud_job_run_status_failed_run(mocked_responses):
     assert not wait_for_dbt_cloud_job_run_status(
         account_id=ACCOUNT_ID, run_id=RUN_ID, poll_interval_seconds=0
     )
+
+
+def test_dbt_cloud_auth_missing_token(monkeypatch):
+    """Test that missing DBT_CLOUD_API_TOKEN raises ValueError."""
+    monkeypatch.delenv("DBT_CLOUD_API_TOKEN", raising=False)
+    with pytest.raises(
+        ValueError, match="Environment variable 'DBT_CLOUD_API_TOKEN' is not set."
+    ):
+        call_dbt_cloud_api(account_id=ACCOUNT_ID, endpoint="projects/")
+
+
+def test_get_dbt_job_run_artifacts_overwrite(mocked_responses, tmp_path):
+    """Test that an existing artifact is overwritten when overwrite=True."""
+    mocked_responses.get(DBT_CLOUD_ARTIFACTS_URL, json={"data": ["manifest.json"]})
+    mocked_responses.get(f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json", json=MANIFEST)
+    file_path = tmp_path / "manifest.json"
+    file_path.write_text("old_content")
+
+    downloaded = get_dbt_job_run_artifacts(
+        account_id=ACCOUNT_ID, run_id=RUN_ID, output_dir=tmp_path, overwrite=True
+    )
+    assert downloaded == [str(file_path)]
+    assert json.loads(file_path.read_text()) == MANIFEST
+
+
+def test_get_dbt_job_run_artifacts_filtered(mocked_responses, tmp_path):
+    """Test that only specifically requested artifacts are downloaded."""
+    mocked_responses.get(
+        DBT_CLOUD_ARTIFACTS_URL,
+        json={"data": ["manifest.json", "run_results.json", "catalog.json"]},
+    )
+    mocked_responses.get(f"{DBT_CLOUD_ARTIFACTS_URL}manifest.json", json=MANIFEST)
+
+    downloaded = get_dbt_job_run_artifacts(
+        account_id=ACCOUNT_ID,
+        run_id=RUN_ID,
+        output_dir=tmp_path,
+        artifacts=["manifest.json"],
+    )
+    assert downloaded == [str(tmp_path / "manifest.json")]
+    assert (tmp_path / "manifest.json").exists()
+    assert not (tmp_path / "run_results.json").exists()
+
+
+def test_wait_for_dbt_cloud_job_run_status_timeout():
+    """Test that wait_for_dbt_cloud_job_run_status times out when max_wait_seconds is exceeded."""
+    with pytest.raises(TimeoutError, match="did not complete within 0s"):
+        wait_for_dbt_cloud_job_run_status(
+            account_id=ACCOUNT_ID,
+            run_id=RUN_ID,
+            poll_interval_seconds=0,
+            max_wait_seconds=0,
+        )
