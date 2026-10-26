@@ -70,12 +70,12 @@ def dbt_cloud_run(
 @pytest.fixture(autouse=True)
 def no_retries_and_dummy_credentials(monkeypatch) -> None:
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "stop",
         stop_after_delay(0),
     )
     monkeypatch.setattr(
-        call_github_api.retry,  # type: ignore[attr-defined]
+        call_github_api.retry,
         "stop",
         stop_after_delay(0),
     )

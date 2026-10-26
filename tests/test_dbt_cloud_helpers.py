@@ -52,12 +52,12 @@ def test_dbt_cloud_api_custom_url_base(mocked_responses, monkeypatch):
 def test_dbt_cloud_api_client_error_not_retried(mocked_responses, monkeypatch):
     """Test that an invalid endpoint fails on the first attempt."""
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "stop",
         stop_after_attempt(3),
     )
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "wait",
         wait_fixed(0),
     )
@@ -73,12 +73,12 @@ def test_dbt_cloud_api_client_error_not_retried(mocked_responses, monkeypatch):
 def test_dbt_cloud_api_transient_error_retried(mocked_responses, monkeypatch, status):
     """Test that rate limiting and server errors are retried."""
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "stop",
         stop_after_attempt(3),
     )
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "wait",
         wait_fixed(0),
     )
@@ -219,7 +219,7 @@ def test_dbt_cloud_auth_missing_token(monkeypatch):
     """Test that missing DBT_CLOUD_API_TOKEN raises ValueError."""
     monkeypatch.delenv("DBT_CLOUD_API_TOKEN", raising=False)
     with pytest.raises(
-        ValueError, match="Environment variable 'DBT_CLOUD_API_TOKEN' is not set."
+        ValueError, match=r"Environment variable 'DBT_CLOUD_API_TOKEN' is not set\."
     ):
         call_dbt_cloud_api(account_id=ACCOUNT_ID, endpoint="projects/")
 

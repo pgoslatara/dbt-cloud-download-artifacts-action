@@ -82,14 +82,14 @@ quote-style = "double"
 skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
-ignore = ["COM812", "D100", "D203", "D213", "D406", "D407", "D409", "E501", "G004", "S101"]
+ignore = ["missing-trailing-comma", "undocumented-public-module", "incorrect-blank-line-before-class", "multi-line-summary-second-line", "missing-new-line-after-section-name", "missing-dashed-underline-after-section", "mismatched-section-underline-length", "line-too-long", "logging-f-string", "assert"]
 preview = true
 select = ["A", "ARG", "B", "C4", "COM", "D", "DOC", "E", "EXE", "F", "G", "I", "ICN", "LOG", "N", "PT", "PTH", "Q", "RUF", "S", "SIM", "T20", "TCH", "TID", "W"]
 unfixable = ["B"]
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["E402"]
-"tests/*" = ["D100", "D103", "D104", "D400", "D415", "E402"]
+"__init__.py" = ["module-import-not-at-top-of-file"]
+"tests/*" = ["undocumented-public-module", "undocumented-public-function", "undocumented-public-package", "missing-trailing-period", "missing-terminal-punctuation", "module-import-not-at-top-of-file"]
 
 [tool.uv]
 # Install the project itself so `uv run` exposes the `download_artifacts` script.
