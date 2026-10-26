@@ -30,11 +30,17 @@ jobs:
             - name: Install dependencies
               run: make install
 
+            # Tool or dependency bumps (e.g. Dependabot) only touch config files, so
+            # linting changed files alone would skip every Python hook.
             - name: Run pre-commit
               run: |
                 git diff --name-only --diff-filter=d origin/main...HEAD > changed_files.txt
                 cat changed_files.txt
-                cat changed_files.txt | xargs --no-run-if-empty uv run pre-commit run --files
+                if grep -qxE '\.pre-commit-config\.yaml|pyproject\.toml|uv\.lock' changed_files.txt; then
+                  uv run pre-commit run --all-files
+                else
+                  cat changed_files.txt | xargs --no-run-if-empty uv run pre-commit run --files
+                fi
 
     unit-tests:
       needs: [pre-commit]
