@@ -17,12 +17,12 @@ from .pytest_helpers import catch_logs, records_to_tuples
 
 def test_logging_debug(monkeypatch) -> None:
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "stop",
         stop_after_delay(0),
     )
     monkeypatch.setattr(
-        call_github_api.retry,  # type: ignore[attr-defined]
+        call_github_api.retry,
         "stop",
         stop_after_delay(0),
     )
@@ -54,12 +54,12 @@ def test_logging_debug(monkeypatch) -> None:
 
 def test_logging_info(monkeypatch) -> None:
     monkeypatch.setattr(
-        call_dbt_cloud_api.retry,  # type: ignore[attr-defined]
+        call_dbt_cloud_api.retry,
         "stop",
         stop_after_delay(0),
     )
     monkeypatch.setattr(
-        call_github_api.retry,  # type: ignore[attr-defined]
+        call_github_api.retry,
         "stop",
         stop_after_delay(0),
     )

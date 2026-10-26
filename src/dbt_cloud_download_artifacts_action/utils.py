@@ -4,6 +4,8 @@ from functools import lru_cache
 import requests
 from requests import HTTPError
 
+logger = logging.getLogger(__name__)
+
 # Seconds to wait for the server to connect or send data before the request fails.
 REQUEST_TIMEOUT_SECONDS = 30
 
@@ -23,7 +25,7 @@ def create_requests_session() -> requests.Session:
         requests.Session
 
     """
-    logging.info("Creating reusable requests session...")
+    logger.info("Creating reusable requests session...")
     return requests.Session()
 
 
@@ -41,8 +43,8 @@ def raise_for_status(response: requests.Response) -> None:
     try:
         response.raise_for_status()
     except HTTPError as e:
-        logging.error(f"{response.status_code=}")
-        logging.error(f"{response.content=}")
+        logger.error(f"{response.status_code=}")
+        logger.error(f"{response.content=}")
         if (
             400 <= response.status_code < 500
             and response.status_code not in RETRYABLE_CLIENT_ERROR_STATUS_CODES

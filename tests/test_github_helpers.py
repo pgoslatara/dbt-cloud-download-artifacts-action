@@ -92,7 +92,7 @@ def test_github_auth_missing_token(monkeypatch):
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     with pytest.raises(
         ValueError,
-        match="Neither 'PAT_GITHUB' nor 'GITHUB_TOKEN' environment variable is set.",
+        match=r"Neither 'PAT_GITHUB' nor 'GITHUB_TOKEN' environment variable is set\.",
     ):
         call_github_api(endpoint="user")
 

@@ -15,6 +15,8 @@ from dbt_cloud_download_artifacts_action.github_helpers import (
 from dbt_cloud_download_artifacts_action.logger import configure_console_logging
 from dbt_cloud_download_artifacts_action.version import version
 
+logger = logging.getLogger(__name__)
+
 
 def write_github_output(name: str, value: Any) -> None:
     """Write an output key-value pair to the GITHUB_OUTPUT environment file."""
@@ -33,8 +35,8 @@ def cli(args: Optional[Namespace] = None) -> None:
     """
     args = args or arg_parser()
     configure_console_logging(verbose=args.verbose)
-    logging.info(f"Running `dbt-cloud-download-artifacts-action` ({version()})...")
-    logging.debug(f"{args=}")
+    logger.info(f"Running `dbt-cloud-download-artifacts-action` ({version()})...")
+    logger.debug(f"{args=}")
 
     wait_timeout = getattr(args, "wait_timeout", 120)
     dbt_account_id, dbt_run_id, dbt_host = get_dbt_run_id_per_commit_sha(
@@ -63,7 +65,7 @@ def cli(args: Optional[Namespace] = None) -> None:
         )
         if getattr(args, "fail_on_run_failure", False):
             raise RuntimeError(msg)
-        logging.warning(msg)
+        logger.warning(msg)
 
     artifacts_filter = None
     if getattr(args, "artifacts", None):

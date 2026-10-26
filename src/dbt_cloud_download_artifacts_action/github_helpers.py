@@ -20,6 +20,8 @@ from dbt_cloud_download_artifacts_action.utils import (
     raise_for_status,
 )
 
+logger = logging.getLogger(__name__)
+
 # Run URL that dbt Cloud posts as the `target_url` of its commit status, e.g.
 # https://cloud.getdbt.com/deploy/<account_id>/projects/<project_id>/runs/<run_id>/
 DBT_CLOUD_RUN_URL_PATTERN = re.compile(
@@ -83,7 +85,7 @@ def call_github_api(
     )
     raise_for_status(r)
 
-    logging.debug(f"Response: {r.status_code}, {r.reason}")
+    logger.debug(f"Response: {r.status_code}, {r.reason}")
     return r.json()
 
 
@@ -121,18 +123,18 @@ def get_dbt_run_id_per_commit_sha(
         check_info = call_github_api(
             endpoint=f"repos/{repo_name}/commits/{commit_sha}/status"
         )
-        logging.debug(f"{check_info=}")
+        logger.debug(f"{check_info=}")
         latest_check = [
             check for check in check_info["statuses"] if check["context"] == "dbt Cloud"
         ]
-        logging.debug(f"{latest_check=}")
+        logger.debug(f"{latest_check=}")
         if latest_check:
             break
         if time.monotonic() >= deadline:
             raise TimeoutError(
                 "No dbt Cloud CI job found, has it been triggered correctly?"
             )
-        logging.info(f"No dbt Cloud CI job found, waiting {poll_interval_seconds}s...")
+        logger.info(f"No dbt Cloud CI job found, waiting {poll_interval_seconds}s...")
         time.sleep(poll_interval_seconds)
 
     dbt_ci_job_url = latest_check[0]["target_url"]
@@ -146,8 +148,8 @@ def get_dbt_run_id_per_commit_sha(
     parsed_url = urlparse(dbt_ci_job_url)
     dbt_cloud_host = parsed_url.netloc or "cloud.getdbt.com"
 
-    logging.debug(f"{dbt_account_id=}")
-    logging.debug(f"{dbt_run_id=}")
-    logging.debug(f"{dbt_cloud_host=}")
+    logger.debug(f"{dbt_account_id=}")
+    logger.debug(f"{dbt_run_id=}")
+    logger.debug(f"{dbt_cloud_host=}")
 
     return dbt_account_id, dbt_run_id, dbt_cloud_host
