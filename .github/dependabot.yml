@@ -1,11 +1,20 @@
 ---
 version: 2
 updates:
+    # Grouped so each ecosystem raises at most one PR a week.
     - package-ecosystem: github-actions
       directory: /
+      groups:
+          github-actions:
+              patterns:
+                  - "*"
       schedule:
           interval: weekly
     - package-ecosystem: uv
       directory: /
+      groups:
+          uv:
+              patterns:
+                  - "*"
       schedule:
           interval: weekly
