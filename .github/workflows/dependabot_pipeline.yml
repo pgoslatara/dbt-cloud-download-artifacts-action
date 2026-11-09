@@ -1,0 +1,57 @@
+---
+name: Dependabot pipeline
+
+# Auto-merges Dependabot PRs once the required checks pass, and keeps them up to date
+# with main, which branch protection requires but Dependabot does not do by itself.
+#
+# Uses PAT_GITHUB (owned by the code owner) because:
+# - the required review must come from the code owner, not github-actions[bot];
+# - merges made with GITHUB_TOKEN do not trigger post_merge_pipeline.yml;
+# - Dependabot ignores "@dependabot" commands from github-actions[bot].
+# Dependabot-triggered runs only see Dependabot secrets, so PAT_GITHUB must exist as
+# both an Actions secret and a Dependabot secret.
+on:
+    pull_request:
+        branches:
+            - main
+        types:
+            - opened
+            - reopened
+            - synchronize
+    push:
+        branches:
+            - main
+
+permissions: {}
+
+jobs:
+    auto-merge:
+        # PR author, not github.actor, as the actor check is spoofable.
+        if: >-
+            github.event_name == 'pull_request'
+            && github.event.pull_request.user.login == 'dependabot[bot]'
+            && github.event.pull_request.head.repo.full_name == github.repository
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ secrets.PAT_GITHUB }}
+            PR_URL: ${{ github.event.pull_request.html_url }}
+        steps:
+            # Re-approve on every push: stale approvals are dismissed after a rebase.
+            - name: Approve PR
+              run: gh pr review --approve --body "Auto-approved Dependabot update; merges once required checks pass." "$PR_URL"
+
+            - name: Enable auto-merge
+              run: gh pr merge --auto --merge "$PR_URL"
+
+    rebase-open-prs:
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ secrets.PAT_GITHUB }}
+            GH_REPO: ${{ github.repository }}
+        steps:
+            # Every open PR is behind main after a push, so no need to check each one.
+            - name: Ask Dependabot to rebase its open PRs
+              run: |
+                  gh pr list --author app/dependabot --state open --json number --jq '.[].number' |
+                    xargs --no-run-if-empty -I {} gh pr comment {} --body "@dependabot rebase"
